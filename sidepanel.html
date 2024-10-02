@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <!-- bootstrap -->
+        <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+        <!-- boxicons -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css">
+        <link rel="stylesheet" href="assets/css/styles.css">
+
+        <title>FilterX UI
+        </title>
+    </head>
+    <body>
+        <!-- HEADER -->
+        <header class="header" id="header">
+            <nav class="nav container">
+                <a href="#" class="nav__logo">FilterX</a>
+
+                <div class="nav__menu" id="nav-menu">
+                    <ul class="nav__list">
+
+                        <li class="nav__item">
+                            <a href="#detect" class="nav__link active-link">
+                                <i class='bx bx-radar nav__icon'></i>
+                                <span class="nav__name">Detect</span>
+                            </a>
+                        </li>
+
+                        <li class="nav__item">
+                            <a href="#modes" class="nav__link">
+                                <i class='bx bx-cog nav__icon'></i>
+                                <span class="nav__name">Modes</span>
+                            </a>
+                        </li>
+
+                        <li class="nav__item">
+                            <a href="#filter" class="nav__link">
+                                <i class='bx bx-low-vision nav__icon'></i>
+                                <span class="nav__name">Censor</span>
+                            </a>
+                        </li>
+
+                        <li class="nav__item">
+                            <a href="#logs" class="nav__link">
+                                <i class='bx bx-history nav__icon'></i>
+                                <span class="nav__name">Logs</span>
+                            </a>
+                        </li>
+
+                        <li class="nav__item">
+                            <a href="#about" class="nav__link">
+                                <i class='bx bx-info-circle nav__icon'></i>
+                                <span class="nav__name">About</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <img src="assets/img/fx.png" alt="" class="nav__img">
+            </nav>
+        </header>
+
+        <main>
+            <!-- DETECT -->
+            <section class="container section section__height" id="detect">
+                <h2 class="section__title mt-5">Activate Detection</h2>
+                    <div class="accordion mt-5 m-3" id="accordionExample">
+                        <div class="accordion-item accordion__sec">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button collapsed accordion__title fw-bolder" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne"><i class='bx bx-timer fs-1 me-2'></i>Real-Time Detection</button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <strong>Enable Real Time Detection. </strong> Automatically scan the current page and also new texts that will appear. Using this feature will consume higher resources. 
+                                </div>
+                            </div>
+                        </div>
+                
+                        <div class="accordion-item accordion__sec">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed accordion__title fw-bolder" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo"><i class='bx bx-file-find fs-1 me-2'></i>Manual Scan</button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                                <div class="accordion-body mb-2">
+                                    <strong>Manually scan the page. </strong>Using this manual mode will only scan the currently loaded page elements, resulting in lower resource usage.
+                                    <div class="d-grid gap-2 col-6 mx-auto mt-3">
+                                        <button class="btn btn-primary me-2" type="button" id="scanPage">Scan Page<i class='bx bx-search fs-2 ms-1'></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item accordion__sec">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed accordion__title fw-bolder" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="true" aria-controls="collapseThree"><i class='bx bx-message-rounded-dots fs-1 me-2'></i>Type Something</button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <strong>Put your own text. </strong> You can try typing your own sentence (English or Tagalog).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </section>
+
+            <!-- MODES -->
+            <section class="container section section__height" id="modes">
+                <h2 class="section__title mt-5">Select Mode</h2>
+                
+            </section>
+
+            <!-- FILTER -->
+            <section class="container section section__height" id="filter">
+                <h2 class="section__title mt-5">Censor Type</h2>
+            </section>
+
+            <!-- LOGS -->
+            <section class="container section section__height" id="logs">
+                <h2 class="section__title mt-5">Logs</h2>
+            </section>
+
+            <!-- ABOUT -->
+            <section class="container section section__height" id="about">
+                <h2 class="section__title mt-5">About</h2>
+            </section>
+        </main>
+        
+        
+        <script src="assets/js/main.js"></script>
+        <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="main.js"></script>
+
+    </body>
+</html>
