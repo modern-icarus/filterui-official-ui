@@ -1,14 +1,17 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scanPage") {
-    const elements = document.querySelectorAll('p, div');
+    const elements = document.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6');
     const uniqueSentences = new Set();
 
     const sentences = Array.from(elements)
-      .map(el => el.innerText)
-      .join(' ')
-      .split('.')
-      .map(sentence => cleanRepetitiveWords(sentence))
-      .filter(sentence => sentence.length > 3 && isValidSentence(sentence))
+      .map(el => el.innerText)                // Extract the text content from valid elements
+      .filter(text => text.trim().length > 0)  // Filter out empty or whitespace-only text
+      .join(' ')                               // Combine all extracted text
+      .split(/[.!?]\s+/)                       // Split text into sentences based on punctuation
+      .map(text => removeExtraWhitespaces(text)) // Remove extra whitespaces from each sentence
+      .map(text => removeHtmlTags(text))         // Remove HTML tags
+      .map(text => removeNonAlphanumeric(text))  // Remove non-alphanumeric characters
+      .filter(sentence => sentence.trim().length > 0) // Ensure non-empty sentences
       .filter(sentence => {
         const isUnique = !uniqueSentences.has(sentence);
         uniqueSentences.add(sentence);
@@ -20,15 +23,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+// Function to remove extra whitespaces
+function removeExtraWhitespaces(text) {
+  return text.replace(/\s+/g, ' ');
+}
+
+// Function to remove HTML tags
+function removeHtmlTags(html) {
+  return html.replace(/<.*?>/g, ' ');
+}
+
+// Function to remove non-alphanumeric characters
+function removeNonAlphanumeric(text) {
+  return text.replace(/[^a-zA-Z0-9\s]/g, '');
+}
+
+// Function to clean repetitive words
 function cleanRepetitiveWords(sentence) {
   const words = sentence.split(/\s+/);
   const cleanedWords = [];
   const wordCount = {};
 
-  // Loop through words and add to cleanedWords if not a consecutive duplicate
   words.forEach(word => {
     const lowerWord = word.toLowerCase();
-    // Track word occurrences, limit to 1 occurrence per word
     if (!wordCount[lowerWord] || wordCount[lowerWord] < 1) {
       cleanedWords.push(word);
       wordCount[lowerWord] = 1;
@@ -36,27 +53,4 @@ function cleanRepetitiveWords(sentence) {
   });
 
   return cleanedWords.join(' ');
-}
-
-function isValidSentence(sentence) {
-  const nonAlphaCount = sentence.replace(/[a-zA-Z\s]/g, '').length;
-  const words = sentence.split(' ');
-  const repeatedWordThreshold = 5;
-  const uniqueWords = [...new Set(words)];
-
-  // Check if the sentence has more than 3 words, less than 30% non-alphabet characters,
-  // and doesn't have excessive word repetition
-  return (
-    words.length > 3 &&
-    nonAlphaCount < sentence.length * 0.3 &&
-    (words.length - uniqueWords.length) < repeatedWordThreshold &&
-    !isInvalidWord(sentence) // Added check for invalid words
-  );
-}
-
-// Function to check for invalid words
-function isInvalidWord(sentence) {
-  // This regex checks for a sequence of non-proper words (like random character strings)
-  const invalidWordPattern = /\b[0-9a-zA-Z]{10,}\b/; // Match alphanumeric sequences of 10 or more characters
-  return invalidWordPattern.test(sentence);
 }
