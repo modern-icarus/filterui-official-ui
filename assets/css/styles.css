@@ -9,6 +9,7 @@
   --first-color: #FFA116;
   --second-color: #423726;
   --blue-color: rgb(10, 132, 255);
+  --purple-color: rgb(191, 90, 242);
   --first-color-alt: hsl(var(--hue), var(--sat), 36%);
   --title-color: #AEAAAA;
   --text-color: #AEAAAA;
@@ -92,13 +93,23 @@ img {
 
 .accordion__sec{
   color: var(--text-color);
-  background-color: var(--second-color) !important;
+  background-color: var(--container-color) !important;
 
 }
 
-.accordion__title{
+.first__accordion__title{
+  color: var(--purple-color) !important;
+  background-color: var(--container-color) !important;
+}
+
+.second__accordion__title{
   color: var(--first-color) !important;
-  background-color: var(--second-color) !important;
+  background-color: var(--container-color) !important;
+}
+
+.third__accordion__title{
+  color: var(--blue-color) !important;
+  background-color: var(--container-color) !important;
 }
 
 .accordion-header{
@@ -106,11 +117,11 @@ img {
 }
 
 .accordion-item{
-  border-color: var(--first-color) !important;
+  border-color: var(--container-color) !important;
 }
 
 .accordion-button {
-  box-shadow: 0 0 0.1rem var(--first-color) !important;
+  box-shadow: 0 0 0.1rem var(--title-color) !important;
 }
 
 .btn{
@@ -119,9 +130,24 @@ img {
   color: var(--first-color) !important;
 }
 
-.accordion-button:focus {
+.first__accordion__title:focus {
+  box-shadow: 0 0 0 0.1rem var(--purple-color) !important; 
+  outline: none;
+}
+
+.second__accordion__title:focus {
   box-shadow: 0 0 0 0.1rem var(--first-color) !important; 
   outline: none;
+}
+
+.third__accordion__title:focus {
+  box-shadow: 0 0 0 0.1rem var(--blue-color) !important; 
+  outline: none;
+}
+
+.form-check-input:checked {
+  background-color: var(--purple-color) !important;
+  border-color: var(--purple-color) !important;
 }
 
 /* HEADER */
