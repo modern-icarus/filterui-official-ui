@@ -1,27 +1,34 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scanPage") {
-    const elements = document.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6');
+    const postElements = document.querySelectorAll('div[dir="auto"], span[dir="auto"]'); // Target elements based on general attributes
     const uniqueSentences = new Set();
 
-    const sentences = Array.from(elements)
-      .map(el => el.innerText)                // Extract the text content from valid elements
-      .filter(text => text.trim().length > 0)  // Filter out empty or whitespace-only text
-      .join(' ')                               // Combine all extracted text
-      .split(/[.!?]\s+/)                       // Split text into sentences based on punctuation
-      .map(text => removeExtraWhitespaces(text)) // Remove extra whitespaces from each sentence
-      .map(text => removeHtmlTags(text))         // Remove HTML tags
-      .map(text => removeNonAlphanumeric(text))  // Remove non-alphanumeric characters
-      .filter(sentence => sentence.trim().length > 0) // Ensure non-empty sentences
+    const sentences = Array.from(postElements)
+      .filter(el => el.innerText.trim().length > 0)             // Exclude empty or whitespace-only elements
+      .filter(el => el.closest('nav, footer, button') === null)  // Exclude elements inside <nav>, <footer>, <button>
+      .filter(el => !containsNestedText(el))                     // Exclude elements with nested text content
+      .flatMap(el => el.innerText.split(/[.!?]\s*/))             // Split text by sentence-ending punctuation
+      .map(text => text.trim())                                  // Trim the text for each sentence
+      .filter(text => text.length > 0)                           // Filter out empty or whitespace-only text
+      .map(text => cleanRepetitiveWords(removeNonAlphanumeric(removeExtraWhitespaces(removeHtmlTags(text)))))  // Process text
+      .filter(sentence => isValidSentence(sentence))             // Only keep valid sentences
+      .filter(sentence => sentence.trim().length > 0)            // Ensure non-empty sentences
       .filter(sentence => {
         const isUnique = !uniqueSentences.has(sentence);
         uniqueSentences.add(sentence);
         return isUnique;
       })
-      .map(sentence => sentence.trim().toLowerCase());
+      .map(sentence => sentence.trim().toLowerCase());            // Normalize text to lowercase
 
     sendResponse({ sentences });
   }
 });
+
+// Function to check if a sentence is valid (has two or more words)
+function isValidSentence(sentence) {
+  const words = sentence.trim().split(/\s+/); // Split the sentence into words
+  return words.length >= 3;                   // Valid if two or more words
+}
 
 // Function to remove extra whitespaces
 function removeExtraWhitespaces(text) {
@@ -53,4 +60,10 @@ function cleanRepetitiveWords(sentence) {
   });
 
   return cleanedWords.join(' ');
+}
+
+// Function to check if the element contains nested text content
+function containsNestedText(el) {
+  // Returns true if the element has child nodes with actual text content, indicating nested text
+  return Array.from(el.children).some(child => child.innerText.trim().length > 0);
 }

@@ -88,7 +88,23 @@
                                 <div class="accordion-body mb-2">
                                     <strong>Manually scan the page. </strong>Using this manual mode will only scan the currently loaded page elements, resulting in lower resource usage.
                                     <div class="d-grid gap-2 col-6 mx-auto mt-3">
-                                        <button class="btn btn-primary me-2" type="button" id="scanPage">Scan Page<i class='bx bx-search fs-2 ms-1'></i></button>
+                                        <button class="btn btn-primary me-2" type="button" id="scanPage" data-bs-toggle="modal" data-bs-target="#resultModal">Scan Page<i class='bx bx-search fs-2 ms-1'></i></button>
+                                        <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered m-3">
+                                              <div class="modal-content">
+                                                <div class="modal-header">
+                                                  <h1 class="modal-title fs-5" id="resultModalLabel">Scan Result</h1>
+                                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body" id="modalContent">
+                                                </div>
+                                                <div class="modal-footer">
+                                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                  <!-- <button type="button" class="btn btn-primary">Confirm</button> -->
+                                                </div>
+                                              </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

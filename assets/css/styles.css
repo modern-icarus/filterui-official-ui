@@ -72,7 +72,7 @@ img {
 
 .section__title {
   font-size: var(--h1-font-size);
-  color: #FFF;
+  color: var(--text-color);
   text-align: center;
   margin-bottom: 1.5rem;
 }
@@ -203,6 +203,22 @@ img {
   position: relative;
   color: var(--first-color);
   transition: .3s;
+} 
+
+.modal-title{
+  color: var(--first-color); 
+}
+
+.modal-content{
+  background-color: var(--second-color);
+}
+
+.modal-footer, .modal-header{
+  border-color: var(--first-color) !important;
+}
+
+.btn-close{
+  color: var(--first-color) !important; 
 }
 
 /* Minimalist design, active link */
