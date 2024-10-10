@@ -95,6 +95,9 @@ async function analyzeHateSpeechWithThrottling(group, model, concurrencyLimit) {
     const tasks = group.map(sentence => async () => {
         const prediction = await callHuggingFaceAPI(model, sentence);
         console.log(`Sentence: "${sentence}"`, `Prediction:`, prediction);
+        prediction.forEach(pred => {
+            console.log(`Prediction label: ${pred.label}, Score: ${pred.score}`);
+        });
         return prediction;
     });
 
@@ -103,40 +106,44 @@ async function analyzeHateSpeechWithThrottling(group, model, concurrencyLimit) {
 
 // Analyze hate speech in grouped sentences
 async function analyzeHateSpeech(englishGroup, tagalogGroup) {
-  const results = { english: [], tagalog: [] };
+    const results = { english: [], tagalog: [] };
 
-  if (englishGroup.length > 0) {
-    console.log("Sending English sentences for hate speech detection...");
-    results.english = await analyzeHateSpeechWithThrottling(
-      englishGroup,
-      ENGLISH_HATE_SPEECH_MODEL,
-      CONCURRENCY_LIMIT
-    );
-  }
+    if (englishGroup.length > 0) {
+        console.log("Sending English sentences for hate speech detection...");
+        results.english = await analyzeHateSpeechWithThrottling(
+            englishGroup,
+            ENGLISH_HATE_SPEECH_MODEL,
+            CONCURRENCY_LIMIT
+        );
+    }
 
-  if (tagalogGroup.length > 0) {
-    console.log("Sending Tagalog sentences for hate speech detection...");
-    results.tagalog = await analyzeHateSpeechWithThrottling(
-      tagalogGroup,
-      TAGALOG_HATE_SPEECH_MODEL,
-      CONCURRENCY_LIMIT
-    );
-  }
+    if (tagalogGroup.length > 0) {
+        console.log("Sending Tagalog sentences for hate speech detection...");
+        results.tagalog = await analyzeHateSpeechWithThrottling(
+            tagalogGroup,
+            TAGALOG_HATE_SPEECH_MODEL,
+            CONCURRENCY_LIMIT
+        );
+    }
 
-  // Count hate speeches in both languages
-  const englishHateCount = results.english.filter(prediction => prediction.label === "HATE").length;
-  const tagalogHateCount = results.tagalog.filter(prediction => prediction.label === "HATE").length;
+    // Count hate speeches in both languages
+    const englishHateCount = results.english.filter(prediction =>
+        prediction.some(pred => pred.label === "HATE" && pred.score > 0.5)
+    ).length;
 
-  console.log("English hate speech analysis results: ", results.english);
-  console.log("Tagalog hate speech analysis results: ", results.tagalog);
+    const tagalogHateCount = results.tagalog.filter(prediction =>
+        prediction.some(pred => pred.label === "LABEL_1" && pred.score > 0.5) // Adjust for Tagalog model
+    ).length;
 
-  // Return the counts to the caller
-  return {
-    englishHateCount,
-    tagalogHateCount,
-  };
+    console.log("English hate speech analysis results: ", results.english);
+    console.log("Tagalog hate speech analysis results: ", results.tagalog);
+
+    // Return the counts to the caller
+    return {
+        englishHateCount,
+        tagalogHateCount,
+    };
 }
-
 
 // Handle waiting (cold start delay)
 async function handleColdStart() {
@@ -153,16 +160,14 @@ function isColdStartError(error) {
 
 // Process sentences collected from content script
 async function processSentences(sentences) {
-  const { englishGroup, tagalogGroup } = await groupByLanguage(sentences);
-  const { englishHateCount, tagalogHateCount } = await analyzeHateSpeech(englishGroup, tagalogGroup);
-  
-  // Combine the counts
-  const detectedHateSpeeches = englishHateCount + tagalogHateCount;
+    const { englishGroup, tagalogGroup } = await groupByLanguage(sentences);
+    const { englishHateCount, tagalogHateCount } = await analyzeHateSpeech(englishGroup, tagalogGroup);
 
-  return { detectedHateSpeeches, englishHateCount, tagalogHateCount }; // Return counts as an object
+    // Combine the counts
+    const detectedHateSpeeches = englishHateCount + tagalogHateCount;
+
+    return { detectedHateSpeeches, englishHateCount, tagalogHateCount }; // Return counts as an object
 }
-
-
 
 // Wait function
 function wait(ms) {

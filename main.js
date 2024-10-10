@@ -1,12 +1,14 @@
 document.addEventListener("DOMContentLoaded", function() {
     const scanPageButton = document.getElementById('scanPage');
     const modalContent = document.getElementById("modalContent");
+    const scanToggle = document.getElementById("scanToggle");
 
-    if (!scanPageButton || !modalContent) {
-        console.error("Button or modal content element not found!");
+    if (!scanPageButton || !modalContent || !scanToggle) {
+        console.error("Button, modal content, or toggle element not found!");
         return;
     }
 
+    // Event listener for Scan Page button
     scanPageButton.addEventListener('click', () => {
         // Show loading spinner and message
         showLoadingModal(modalContent);
@@ -19,6 +21,21 @@ document.addEventListener("DOMContentLoaded", function() {
             } else {
                 handleScanResponse(response, modalContent);
             }
+        });
+    });
+
+    // Event listener for the scanToggle button
+    scanToggle.addEventListener('change', (event) => {
+        const toggleState = event.target.checked; // true if checked (on), false if unchecked (off)
+        console.log(`scanToggle is now ${toggleState ? 'ON' : 'OFF'}`); // Log the toggle state
+
+        // Get the active tab and send a message to content script
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            if (tabs.length === 0) {
+                console.error('No active tabs found.');
+                return;
+            }
+            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleObserver", enabled: toggleState });
         });
     });
 });
@@ -35,12 +52,15 @@ function showLoadingModal(modalContent) {
     `;
 }
 
+
 // Helper function to handle the scan response
 function handleScanResponse(response, modalContent) {
-    let scanResult = response.scanResult || ""; 
-    let detectedHateSpeeches = response.detectedHateSpeeches.englishHateCount + response.detectedHateSpeeches.tagalogHateCount || 0;
-    const englishHateCount = response.englishHateCount || 0;
-    const tagalogHateCount = response.tagalogHateCount || 0;
+    console.log("Response object:", response);
+
+    const scanResult = response.scanResult || ""; 
+    const detectedHateSpeeches = response.detectedHateSpeeches.englishHateCount + response.detectedHateSpeeches.tagalogHateCount;
+    const englishHateCount = response.detectedHateSpeeches.englishHateCount || 0;
+    const tagalogHateCount = response.detectedHateSpeeches.tagalogHateCount || 0;
 
     if (scanResult === "coldStart") {
         modalContent.innerHTML = `
@@ -79,7 +99,7 @@ function handleScanResponse(response, modalContent) {
                     Error Occurred!
                 </div>
             </div>
-            <p>Error occured! Please restart the page. If error still occurs please try again later!</p>
+            <p>Error occurred! Please restart the page. If error still occurs please try again later!</p>
         `;
     }
 }
