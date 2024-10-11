@@ -1,64 +1,105 @@
 console.log('Content script listener is ready.');
 
-let observer; // Declare the observer variable globally so we can stop it later
+const excludedPatterns = [
+  // Exact sentence patterns
+  "view more answers",
+  "new message requests",
+  "view more comments",
+  "come share your findings in the comments",
+  "reacted to your message",
+
+  // Regular expressions
+  /^view all \d+ replies$/i,
+  /^view \d+ reply$/i,
+  /^photos from .* post$/i,
+  /\b\d+\s*h\b|\b\d+\s+hours?\s+ago\b/i,
+  /(?:\d+\s*d|\d+\s+days?\s+ago)/i,
+  /\b\d+\s*m\b|\b\d+\s+minutes?\s+ago\b/i,
+  /\b\d+h\d+\s+hours?\s+ago\b/i,
+  /\b\d+m\s+a\s+few\s+seconds?\s+ago\b/i,
+  /.*\s+unsent\s+a\s+message\s*\(.*?\)/i,
+  /click on the video to admire its majestic appearance more benefits prepared by \(.*?\) for everyone please check \(.+?\)/i
+];
+
+let observer;
+const loggedSentences = new Set(); //track logged sentences
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scanPage") {
-    const postElements = document.querySelectorAll('div[dir="auto"], span[dir="auto"]');
-    const uniqueSentences = new Set();
-
-    const sentences = Array.from(postElements)
-      .filter(el => el.innerText.trim().length > 0)
-      .filter(el => el.closest('nav, footer, button') === null)
-      .filter(el => !containsNestedText(el))
-      .flatMap(el => el.innerText.split(/[.!?]\s*/))
-      .map(text => text.trim())
-      .filter(text => text.length > 0)
-      .map(text => cleanRepetitiveWords(removeNonAlphanumeric(removeExtraWhitespaces(removeHtmlTags(text)))))
-      .filter(sentence => isValidSentence(sentence))
-      .filter(sentence => sentence.trim().length > 0)
-      .filter(sentence => {
-        const isUnique = !uniqueSentences.has(sentence);
-        uniqueSentences.add(sentence);
-        return isUnique;
-      })
-      .map(sentence => sentence.trim().toLowerCase());
-
-    console.log(`Scanned and found ${sentences.length} unique sentences.`); // Log the sentence count
+    const sentences = extractValidSentences();
+    console.log(`Scanned and found ${sentences.length} unique sentences.`);
     sendResponse({ sentences });
   }
 
-  // Start or stop the Mutation Observer based on toggle state
   if (request.action === "toggleObserver") {
     if (request.enabled) {
-      console.log('Mutation Observer is now ON.'); // Log when observer is turned on
+      console.log('Mutation Observer is now ON.');
       startObserver();
     } else {
       if (observer) {
         observer.disconnect();
         observer = null;
-        console.log('Mutation Observer is now OFF.'); // Log when observer is turned off
+        console.log('Mutation Observer is now OFF.');
       }
     }
   }
 });
 
-// Function to start the Mutation Observer
-function startObserver() {
-  const targetNode = document.body; // Watch the entire body
-  const config = { childList: true, subtree: true }; // Observe additions/removals in the DOM
+//check if a sentence matches any excluded patterns (string or regex)
+function isExcludedSentence(sentence) {
+  return excludedPatterns.some(pattern => {
+    if (typeof pattern === 'string') {
+      return pattern.toLowerCase() === sentence.toLowerCase(); // Exact match for strings
+    } else if (pattern instanceof RegExp) {
+      return pattern.test(sentence); // Regex match for patterns
+    }
+    return false;
+  });
+}
 
-  // Callback function for MutationObserver
+// Extract and process valid sentences from the page
+function extractValidSentences() {
+  const postElements = document.querySelectorAll('div[dir="auto"], span[dir="auto"]');
+  const uniqueSentences = new Set();
+
+  return Array.from(postElements)
+    .filter(el => el.innerText.trim().length > 0)
+    .filter(el => el.closest('nav, footer, button') === null)
+    .filter(el => !containsNestedText(el))
+    .flatMap(el => el.innerText.split(/[.!?]\s*/))
+    .map(text => preprocessSentence(text))  // Preprocessing applied here
+    .filter(text => text.length > 0 && !isExcludedSentence(text)) // Exclusion check after preprocessing
+    .filter(sentence => isValidSentence(sentence) && !uniqueSentences.has(sentence))
+    .map(sentence => {
+      uniqueSentences.add(sentence);
+      return sentence.toLowerCase(); // Ensure the sentence is in lowercase
+    });
+}
+
+// Function to preprocess sentence
+function preprocessSentence(sentence) {
+  return cleanRepetitiveWords(
+    removeNonAlphanumeric(
+      removeExtraWhitespaces(
+        removeHtmlTags(sentence.trim().toLowerCase()) // Convert to lowercase
+      )
+    )
+  );
+}
+
+// Start the Mutation Observer
+function startObserver() {
+  const targetNode = document.body;
+  const config = { childList: true, subtree: true };
+
   const callback = function(mutationsList) {
     for (let mutation of mutationsList) {
       if (mutation.type === 'childList') {
         mutation.addedNodes.forEach(node => {
-          if (node.nodeType === Node.ELEMENT_NODE) { // Check if it's an element
-            extractTextContent(node); // Extract text content for new nodes
-
-            // If the new node has children, check them too
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            processNodeText(node);
             node.querySelectorAll('div[dir="auto"], span[dir="auto"]').forEach(childNode => {
-              extractTextContent(childNode); // Extract text content for child elements
+              processNodeText(childNode);
             });
           }
         });
@@ -66,33 +107,45 @@ function startObserver() {
     }
   };
 
-  // Create a new MutationObserver instance
   observer = new MutationObserver(callback);
-
-  // Start observing the target node
   observer.observe(targetNode, config);
-  console.log('Mutation Observer started and watching for changes in the body.'); // Log when the observer starts
+  console.log('Mutation Observer started and watching for changes in the body.');
 }
 
-// Function to extract text content from a node and its relevant children
-function extractTextContent(node) {
+// Process text content from a node
+function processNodeText(node) {
   const relevantElements = node.querySelectorAll('div[dir="auto"], span[dir="auto"]');
 
   relevantElements.forEach(el => {
     const textContent = el.innerText.trim();
     if (textContent) {
-      console.log('Extracted text:', textContent); // Log the extracted text
+      const sentences = extractValidSentencesFromText(textContent);
+      sentences.forEach(sentence => {
+        if (!loggedSentences.has(sentence)) { // Check if sentence is already logged
+          loggedSentences.add(sentence); // Add to logged sentences set
+          console.log('Valid sentence extracted:', sentence);
+        }
+      });
     }
   });
 }
 
-// Function to check if a sentence is valid (has two or more words)
+// Extract valid sentences from a given text
+function extractValidSentencesFromText(text) {
+  return text
+    .split(/[.!?]\s*/)
+    .map(sentence => preprocessSentence(sentence))  // Preprocessing applied here
+    .filter(sentence => sentence.length > 0 && !isExcludedSentence(sentence))
+    .filter(sentence => isValidSentence(sentence));
+}
+
+// Check if the sentence is valid (two or more words)
 function isValidSentence(sentence) {
   const words = sentence.trim().split(/\s+/);
   return words.length >= 3;
 }
 
-// Function to remove extra whitespaces
+// Helper Functions
 function removeExtraWhitespaces(text) {
   return text.replace(/\s+/g, ' ');
 }

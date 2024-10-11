@@ -7,11 +7,34 @@ const COLD_START_RETRY_DELAY = 30000; // 30 seconds delay for cold start retries
 const MAX_TOKEN_LENGTH = 512; // Maximum length allowed for the models
 const CONCURRENCY_LIMIT = 5; // Limit for concurrent requests
 
+// Log levels: 0 = no logs, 1 = error, 2 = warn, 3 = info, 4 = debug
+let logLevel = 3;
+
+// Logging utility function
+function log(level, message, ...optionalParams) {
+    if (level <= logLevel) {
+        switch (level) {
+            case 1:
+                console.error(message, ...optionalParams);
+                break;
+            case 2:
+                console.warn(message, ...optionalParams);
+                break;
+            case 3:
+                console.info(message, ...optionalParams);
+                break;
+            case 4:
+                console.debug(message, ...optionalParams);
+                break;
+        }
+    }
+}
+
 // Helper function to call Hugging Face API
 async function callHuggingFaceAPI(model, sentence) {
     try {
         const truncatedSentence = truncateToMaxTokens(sentence, MAX_TOKEN_LENGTH);
-        console.log(`Sending request to model: ${model}`, { inputs: truncatedSentence });
+        log(4, `Sending request to model: ${model}`, { inputs: truncatedSentence });
 
         const response = await fetch(`${HUGGINGFACE_API_URL}${model}`, {
             method: "POST",
@@ -28,10 +51,10 @@ async function callHuggingFaceAPI(model, sentence) {
         }
 
         const result = await response.json();
-        console.log(`Response from model: ${model}`, result);
+        log(4, `Response from model: ${model}`, result);
         return result && result[0] ? result[0] : null;
     } catch (error) {
-        console.error("API request failed: ", error.message);
+        log(1, "API request failed: ", error.message);
         throw error;
     }
 }
@@ -63,14 +86,23 @@ async function throttlePromises(tasks, concurrencyLimit) {
     return Promise.all(results);
 }
 
-// Detect language of a sentence
+// Detect language of a sentence and log
 async function detectLanguage(sentence) {
     const result = await callHuggingFaceAPI(LANGUAGE_DETECTION_MODEL, sentence);
+    let language = "english"; // Default to English
+
     if (result && result.length > 0) {
-        if (result[0].label === "eng_Latn") return "english";
-        if (result[0].label === "tgl_Latn") return "tagalog";
+        if (result[0].label === "eng_Latn") language = "english";
+        if (result[0].label === "tgl_Latn") language = "tagalog";
     }
-    return "english"; // Default to English
+
+    // Log language detection
+    log(3, `Sentence: "${sentence}"`, 
+        `Language Prediction: ${language}`, 
+        `Where API was sent: ${LANGUAGE_DETECTION_MODEL}`
+    );
+
+    return language;
 }
 
 // Group sentences by detected language
@@ -90,14 +122,28 @@ async function groupByLanguage(sentences) {
     return { englishGroup, tagalogGroup };
 }
 
-// Analyze hate speech with throttling
+// Function to call API for hate speech detection and log results
+async function callHateSpeechAPI(model, sentence) {
+    const prediction = await callHuggingFaceAPI(model, sentence);
+    
+    // Log API prediction details
+    log(3, `Sentence: "${sentence}"`, 
+        `Where API was sent: ${model}`,
+        `API Prediction: ${JSON.stringify(prediction)}`
+    );
+
+    return prediction;
+}
+
+// Analyze hate speech with throttling and logging
 async function analyzeHateSpeechWithThrottling(group, model, concurrencyLimit) {
     const tasks = group.map(sentence => async () => {
-        const prediction = await callHuggingFaceAPI(model, sentence);
-        console.log(`Sentence: "${sentence}"`, `Prediction:`, prediction);
+        const prediction = await callHateSpeechAPI(model, sentence);
+        
         prediction.forEach(pred => {
-            console.log(`Prediction label: ${pred.label}, Score: ${pred.score}`);
+            log(3, `Prediction label: ${pred.label}, Score: ${pred.score}`);
         });
+
         return prediction;
     });
 
@@ -109,7 +155,7 @@ async function analyzeHateSpeech(englishGroup, tagalogGroup) {
     const results = { english: [], tagalog: [] };
 
     if (englishGroup.length > 0) {
-        console.log("Sending English sentences for hate speech detection...");
+        log(3, "Sending English sentences for hate speech detection...");
         results.english = await analyzeHateSpeechWithThrottling(
             englishGroup,
             ENGLISH_HATE_SPEECH_MODEL,
@@ -118,7 +164,7 @@ async function analyzeHateSpeech(englishGroup, tagalogGroup) {
     }
 
     if (tagalogGroup.length > 0) {
-        console.log("Sending Tagalog sentences for hate speech detection...");
+        log(3, "Sending Tagalog sentences for hate speech detection...");
         results.tagalog = await analyzeHateSpeechWithThrottling(
             tagalogGroup,
             TAGALOG_HATE_SPEECH_MODEL,
@@ -135,10 +181,9 @@ async function analyzeHateSpeech(englishGroup, tagalogGroup) {
         prediction.some(pred => pred.label === "LABEL_1" && pred.score > 0.5) // Adjust for Tagalog model
     ).length;
 
-    console.log("English hate speech analysis results: ", results.english);
-    console.log("Tagalog hate speech analysis results: ", results.tagalog);
+    log(4, "English hate speech analysis results: ", results.english);
+    log(4, "Tagalog hate speech analysis results: ", results.tagalog);
 
-    // Return the counts to the caller
     return {
         englishHateCount,
         tagalogHateCount,
@@ -147,7 +192,7 @@ async function analyzeHateSpeech(englishGroup, tagalogGroup) {
 
 // Handle waiting (cold start delay)
 async function handleColdStart() {
-    console.log("Cold start detected, retrying...");
+    log(2, "Cold start detected, retrying...");
     await wait(COLD_START_RETRY_DELAY);
     return { scanResult: "coldStart", detectedHateSpeeches: 0 };
 }
@@ -163,10 +208,9 @@ async function processSentences(sentences) {
     const { englishGroup, tagalogGroup } = await groupByLanguage(sentences);
     const { englishHateCount, tagalogHateCount } = await analyzeHateSpeech(englishGroup, tagalogGroup);
 
-    // Combine the counts
     const detectedHateSpeeches = englishHateCount + tagalogHateCount;
 
-    return { detectedHateSpeeches, englishHateCount, tagalogHateCount }; // Return counts as an object
+    return { detectedHateSpeeches, englishHateCount, tagalogHateCount }; 
 }
 
 // Wait function
@@ -180,7 +224,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: "scanPage" }, async (response) => {
                 if (response && response.sentences) {
-                    console.log("Collected sentences: ", response.sentences);
+                    log(3, "Collected sentences: ", response.sentences);
                     try {
                         const hateSpeechCount = await processSentences(response.sentences);
                         sendResponse({ scanResult: "success", detectedHateSpeeches: hateSpeechCount });
@@ -189,16 +233,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             const coldStartResponse = await handleColdStart();
                             sendResponse(coldStartResponse);
                         } else {
-                            console.error("Error processing sentences: ", error.message);
+                            log(1, "Error processing sentences: ", error.message);
                             sendResponse({ scanResult: "maxAttempts", detectedHateSpeeches: 0 });
                         }
                     }
                 } else {
-                    console.error("No response from content script");
+                    log(1, "No response from content script");
                     sendResponse({ scanResult: "maxAttempts", detectedHateSpeeches: 0 });
                 }
             });
         });
-        return true; // Indicates async response
+        return true;
     }
 });

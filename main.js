@@ -29,6 +29,9 @@ document.addEventListener("DOMContentLoaded", function() {
         const toggleState = event.target.checked; // true if checked (on), false if unchecked (off)
         console.log(`scanToggle is now ${toggleState ? 'ON' : 'OFF'}`); // Log the toggle state
 
+        // Disable Scan Page button if the toggle is on, enable it back if off
+        scanPageButton.disabled = toggleState;
+
         // Get the active tab and send a message to content script
         chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
             if (tabs.length === 0) {
@@ -51,7 +54,6 @@ function showLoadingModal(modalContent) {
         </div>
     `;
 }
-
 
 // Helper function to handle the scan response
 function handleScanResponse(response, modalContent) {
