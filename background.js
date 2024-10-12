@@ -219,8 +219,7 @@ function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Listen for messages and process collected sentences
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "scanPage") {
         chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: "scanPage" }, async (response) => {
@@ -246,22 +245,27 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         });
         return true;
     }
+});
 
-    // Handle the real-time detection messages
+// Listen for messages and process collected sentences
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+
+    // Handle real-time detection messages
     if (request.action === "processSentence" && request.sentence) {
         try {
             // Step 1: Detect language
             const language = await detectLanguage(request.sentence);
 
-            // Step 2: Route to the appropriate model based on the detected language
+            // Step 2: Route to the appropriate model based on detected language
             let model = language === "english" ? ENGLISH_HATE_SPEECH_MODEL : TAGALOG_HATE_SPEECH_MODEL;
             const prediction = await callHateSpeechAPI(model, request.sentence);
 
-            // Step 3: Log the predictions for the sentence
+            // Step 3: Log predictions and send response
             prediction.forEach(pred => {
                 log(3, `Real-time Detection: Sentence "${request.sentence}", Prediction Label: ${pred.label}, Score: ${pred.score}`);
             });
 
+            // Send response with prediction results
             sendResponse({ status: "success", sentence: request.sentence, prediction });
         } catch (error) {
             // Handle cold start or API errors
@@ -271,8 +275,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             log(1, "Error processing sentence in real-time detection: ", error.message);
             sendResponse({ status: "error", error: error.message });
         }
+
+        // Return true to indicate that the response will be sent asynchronously
+        return true;
     }
 
     // Ensuring the message handler returns true for async responses
     return true;
 });
+
