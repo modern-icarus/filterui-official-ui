@@ -72,7 +72,7 @@ function handleScanResponse(response, modalContent) {
                     Cold Start Detected!
                 </div>
             </div>
-            <p>Cold start occurs when the API fell asleep... it may take a few seconds for it to wake up</p>
+            <p>Cold start occurs when the API fell asleep... please try again after a few seconds</p>
         `;
     } else if (scanResult === "success") {
         modalContent.innerHTML = `

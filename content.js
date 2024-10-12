@@ -22,7 +22,7 @@ const excludedPatterns = [
 ];
 
 let observer;
-const loggedSentences = new Set(); //track logged sentences
+const loggedSentences = new Set(); // Track logged sentences
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scanPage") {
@@ -45,7 +45,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-//check if a sentence matches any excluded patterns (string or regex)
+// Check if a sentence matches any excluded patterns (string or regex)
 function isExcludedSentence(sentence) {
   return excludedPatterns.some(pattern => {
     if (typeof pattern === 'string') {
@@ -66,7 +66,7 @@ function extractValidSentences() {
     .filter(el => el.innerText.trim().length > 0)
     .filter(el => el.closest('nav, footer, button') === null)
     .filter(el => !containsNestedText(el))
-    .flatMap(el => el.innerText.split(/[.!?]\s*/))
+    .flatMap(el => el.innerText.split(/[.!?]+/))
     .map(text => preprocessSentence(text))  // Preprocessing applied here
     .filter(text => text.length > 0 && !isExcludedSentence(text)) // Exclusion check after preprocessing
     .filter(sentence => isValidSentence(sentence) && !uniqueSentences.has(sentence))
@@ -124,6 +124,8 @@ function processNodeText(node) {
         if (!loggedSentences.has(sentence)) { // Check if sentence is already logged
           loggedSentences.add(sentence); // Add to logged sentences set
           console.log('Valid sentence extracted:', sentence);
+          // Send valid sentence to the background for processing
+          chrome.runtime.sendMessage({ action: "processSentence", sentence });
         }
       });
     }
@@ -133,13 +135,13 @@ function processNodeText(node) {
 // Extract valid sentences from a given text
 function extractValidSentencesFromText(text) {
   return text
-    .split(/[.!?]\s*/)
+    .split(/[.!?]+/)
     .map(sentence => preprocessSentence(sentence))  // Preprocessing applied here
     .filter(sentence => sentence.length > 0 && !isExcludedSentence(sentence))
     .filter(sentence => isValidSentence(sentence));
 }
 
-// Check if the sentence is valid (two or more words)
+// Check if the sentence is valid (three or more words)
 function isValidSentence(sentence) {
   const words = sentence.trim().split(/\s+/);
   return words.length >= 3;

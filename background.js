@@ -110,15 +110,16 @@ async function groupByLanguage(sentences) {
     const englishGroup = [];
     const tagalogGroup = [];
 
-    for (const sentence of sentences) {
+    const tasks = sentences.map(sentence => async () => {
         const language = await detectLanguage(sentence);
         if (language === "english") {
             englishGroup.push(sentence);
         } else {
             tagalogGroup.push(sentence);
         }
-    }
+    });
 
+    await throttlePromises(tasks, CONCURRENCY_LIMIT);
     return { englishGroup, tagalogGroup };
 }
 
@@ -219,7 +220,7 @@ function wait(ms) {
 }
 
 // Listen for messages and process collected sentences
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "scanPage") {
         chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: "scanPage" }, async (response) => {
@@ -245,4 +246,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
         return true;
     }
+
+    // Handle the real-time detection messages
+    if (request.action === "processSentence" && request.sentence) {
+        try {
+            // Step 1: Detect language
+            const language = await detectLanguage(request.sentence);
+
+            // Step 2: Route to the appropriate model based on the detected language
+            let model = language === "english" ? ENGLISH_HATE_SPEECH_MODEL : TAGALOG_HATE_SPEECH_MODEL;
+            const prediction = await callHateSpeechAPI(model, request.sentence);
+
+            // Step 3: Log the predictions for the sentence
+            prediction.forEach(pred => {
+                log(3, `Real-time Detection: Sentence "${request.sentence}", Prediction Label: ${pred.label}, Score: ${pred.score}`);
+            });
+
+            sendResponse({ status: "success", sentence: request.sentence, prediction });
+        } catch (error) {
+            // Handle cold start or API errors
+            if (isColdStartError(error)) {
+                await handleColdStart();
+            }
+            log(1, "Error processing sentence in real-time detection: ", error.message);
+            sendResponse({ status: "error", error: error.message });
+        }
+    }
+
+    // Ensuring the message handler returns true for async responses
+    return true;
 });
