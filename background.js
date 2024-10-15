@@ -125,7 +125,9 @@ async function groupByLanguage(sentences) {
 
 // Function to call API for hate speech detection and log results
 async function callHateSpeechAPI(model, sentence) {
+    console.time("API call");
     const prediction = await callHuggingFaceAPI(model, sentence);
+    console.timeEnd("API call");
     
     // Log API prediction details
     log(3, `Sentence: "${sentence}"`, 
@@ -283,4 +285,46 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     // Ensuring the message handler returns true for async responses
     return true;
 });
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // Timeout to keep service worker alive
+    let keepAlive = true;
+    const keepAliveInterval = setInterval(() => {
+        if (!keepAlive) clearInterval(keepAliveInterval);
+    }, 1000); // Keeps service worker alive
+
+    (async () => {
+        try {
+            console.log("Received message in background:", request);
+
+            if (request.action === "processChatMessage" && request.sentence) {
+                console.log("Starting to process sentence:", request.sentence);
+
+                const language = await detectLanguage(request.sentence);
+                console.log("Detected language:", language);
+
+                let model = language === "english" ? ENGLISH_HATE_SPEECH_MODEL : TAGALOG_HATE_SPEECH_MODEL;
+                const prediction = await callHateSpeechAPI(model, request.sentence);
+                console.log("Prediction result:", prediction);
+
+                // Send the response before the port closes
+                sendResponse({ status: "success", predictionResult: prediction });
+                console.log("Sent response back to the sender");
+
+            }
+        } catch (error) {
+            console.error("Error during message processing:", error);
+            sendResponse({ status: "error", message: error.message });
+        } finally {
+            keepAlive = false;  // Allow service worker to shut down
+        }
+    })();
+
+    return true;  // Keep message channel open for async response
+});
+
+
+
+
+
 

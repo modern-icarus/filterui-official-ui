@@ -1,12 +1,17 @@
 document.addEventListener("DOMContentLoaded", function() {
     const scanPageButton = document.getElementById('scanPage');
     const modalContent = document.getElementById("modalContent");
+
     const scanToggle = document.getElementById("scanToggle");
 
-    if (!scanPageButton || !modalContent || !scanToggle) {
-        console.error("Button, modal content, or toggle element not found!");
-        return;
-    }
+    const userInput = document.getElementById("user-input");
+    const sendMessageButton = document.getElementById("send-message");
+    const chatMessages = document.getElementById("chat-messages");
+
+    // if (!scanPageButton || !modalContent || !scanToggle || !userInput || !sendMessageButton || !chatMessages) {
+    //     console.error("Some elements not found!");
+    //     return;
+    // }
 
     // Event listener for Scan Page button
     scanPageButton.addEventListener('click', () => {
@@ -40,6 +45,82 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             chrome.tabs.sendMessage(tabs[0].id, { action: "toggleObserver", enabled: toggleState });
         });
+    });
+
+    // Chatbox functionality
+    // Function to display message in the chatbox
+    function displayMessage(sender, message) {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("chat-message");
+        messageElement.classList.add(sender === "user" ? "user" : "bot");
+        messageElement.textContent = message;
+        chatMessages.appendChild(messageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;  // Scroll to bottom
+    }
+
+    async function handleMessage(sentence) {
+        // Preprocess the user's input: convert to lowercase
+        const processedSentence = sentence.toLowerCase();
+    
+        // Display user's message in the chat
+        displayMessage("user", processedSentence);
+        
+        try {
+            // Send the processed sentence to the background script for processing (prediction)
+            chrome.runtime.sendMessage(
+                { action: "processChatMessage", sentence: processedSentence },
+                (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error("Error: " + chrome.runtime.lastError.message);
+                        displayMessage("bot", "Sorry, something went wrong. Please try again.");
+                    } else {
+                        // Display the bot's response with the prediction result
+                        const predictions = response.predictionResult || [];
+                        if (predictions.length > 0) {
+                            // Assume the first prediction is the most confident one
+                            const { label, score } = predictions[0];
+    
+                            // Map label to friendly message
+                            const isHateSpeech = label === "LABEL_1" ? "hate speech" : "not hate speech";
+    
+                            // Construct the message to show
+                            const confidence = (score * 100).toFixed(2); // Convert confidence to percentage
+                            const botMessage = `I am ${confidence}% confident that your sentence is ${isHateSpeech}.`;
+    
+                            displayMessage("bot", botMessage);
+                        } else {
+                            displayMessage("bot", "Sorry, no prediction result was found.");
+                        }
+                    }
+                }
+            );
+        } catch (error) {
+            console.error("Error in handleMessage:", error);
+            displayMessage("bot", "Sorry, something went wrong.");
+        }
+    }
+    
+    
+    
+
+    // Send message on button click
+    sendMessageButton.addEventListener("click", function() {
+        const sentence = userInput.value.trim();
+        if (sentence) {
+            handleMessage(sentence);
+            userInput.value = "";  // Clear the input field
+        }
+    });
+
+    // Send message on Enter key press
+    userInput.addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            const sentence = userInput.value.trim();
+            if (sentence) {
+                handleMessage(sentence);
+                userInput.value = "";  // Clear the input field
+            }
+        }
     });
 });
 
