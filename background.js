@@ -30,6 +30,7 @@ function log(level, message, ...optionalParams) {
     }
 }
 
+
 // Helper function to call Hugging Face API
 async function callHuggingFaceAPI(model, sentence) {
     try {
@@ -123,29 +124,84 @@ async function groupByLanguage(sentences) {
     return { englishGroup, tagalogGroup };
 }
 
-// Function to call API for hate speech detection and log results
+let currentMode = 'moderate'; // Default to 'free' mode if nothing is set
+
+// Listener for receiving mode changes from content script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'setMode') {
+        currentMode = message.mode;
+        console.log(`Mode changed to: ${currentMode}`);
+    }
+});
+
+function getModeThreshold() {
+    let threshold;
+
+    switch (currentMode) {
+        case 'strict':
+            threshold = 0.6;
+            break;
+        case 'moderate':
+            threshold = 0.8;
+            break;
+        case 'free':
+        default:
+            threshold = 0.9;
+            break;
+    }
+    return threshold;
+}
+
 async function callHateSpeechAPI(model, sentence) {
     console.time("API call");
     const prediction = await callHuggingFaceAPI(model, sentence);
     console.timeEnd("API call");
     
-    // Log API prediction details
+    // Get the threshold based on the selected mode
+    const threshold = getModeThreshold();
+    
+    // Log API prediction details and apply threshold
     log(3, `Sentence: "${sentence}"`, 
         `Where API was sent: ${model}`,
-        `API Prediction: ${JSON.stringify(prediction)}`
+        `API Prediction: ${JSON.stringify(prediction)}`,
+        `Mode Threshold: ${threshold}`
     );
 
-    return prediction;
+    // Check if it's an English or Tagalog model, and apply the threshold to the correct label
+    const flagged = prediction.filter(pred => 
+        (model === ENGLISH_HATE_SPEECH_MODEL && pred.label === "HATE" && pred.score >= threshold) ||
+        (model === TAGALOG_HATE_SPEECH_MODEL && pred.label === "LABEL_1" && pred.score >= threshold)
+    );
+
+    if (flagged.length > 0) {
+        log(3, `Flagged as hate speech:`, JSON.stringify(flagged));
+        return flagged;
+    } else {
+        // Log if the sentence is marked as non-hate speech because the score is below the threshold
+        log(3, `Prediction below threshold (${threshold}). Marked as non-hate speech:`, 
+            `Sentence: "${sentence}"`, 
+            `Prediction score: ${prediction[0]?.score || 'N/A'}`);
+
+        // Return the prediction (including non-hate speech), not null
+        return prediction;  // Ensure the prediction is still returned
+    }
 }
+
+
+
 
 // Analyze hate speech with throttling and logging
 async function analyzeHateSpeechWithThrottling(group, model, concurrencyLimit) {
     const tasks = group.map(sentence => async () => {
         const prediction = await callHateSpeechAPI(model, sentence);
         
-        prediction.forEach(pred => {
-            log(3, `Prediction label: ${pred.label}, Score: ${pred.score}`);
-        });
+        if (prediction && prediction.forEach) {
+            prediction.forEach(pred => {
+                log(3, `Prediction label: ${pred.label}, Score: ${pred.score}`);
+            });
+        } else {
+            log(2, `No valid prediction for sentence: "${sentence}"`);
+        }
 
         return prediction;
     });
@@ -153,7 +209,7 @@ async function analyzeHateSpeechWithThrottling(group, model, concurrencyLimit) {
     return throttlePromises(tasks, concurrencyLimit);
 }
 
-// Analyze hate speech in grouped sentences
+
 async function analyzeHateSpeech(englishGroup, tagalogGroup) {
     const results = { english: [], tagalog: [] };
 
@@ -175,23 +231,44 @@ async function analyzeHateSpeech(englishGroup, tagalogGroup) {
         );
     }
 
-    // Count hate speeches in both languages
-    const englishHateCount = results.english.filter(prediction =>
-        prediction.some(pred => pred.label === "HATE" && pred.score > 0.5)
+    // Apply the threshold based on the current mode
+    const threshold = getModeThreshold();
+
+    // Count the hate speech occurrences
+    const { englishHateCount, tagalogHateCount } = countHateSpeech(results, threshold);
+
+    log(3, `Hate speech count - English: ${englishHateCount}, Tagalog: ${tagalogHateCount}`);
+
+    return { englishHateCount, tagalogHateCount };
+}
+
+// Count hate speeches function, integrated within the existing structure
+function countHateSpeech(results, threshold) {
+    // Ensure results.english and results.tagalog are arrays, defaulting to empty arrays if undefined
+    const englishResults = Array.isArray(results.english) ? results.english : [];
+    const tagalogResults = Array.isArray(results.tagalog) ? results.tagalog : [];
+
+    // Count hate speeches in English predictions
+    const englishHateCount = englishResults.filter(prediction =>
+        Array.isArray(prediction) && prediction.some(pred => pred.label === "HATE" && pred.score >= threshold)
     ).length;
 
-    const tagalogHateCount = results.tagalog.filter(prediction =>
-        prediction.some(pred => pred.label === "LABEL_1" && pred.score > 0.5) // Adjust for Tagalog model
+    // Count hate speeches in Tagalog predictions
+    const tagalogHateCount = tagalogResults.filter(prediction =>
+        Array.isArray(prediction) && prediction.some(pred => pred.label === "LABEL_1" && pred.score >= threshold)
     ).length;
 
-    log(4, "English hate speech analysis results: ", results.english);
-    log(4, "Tagalog hate speech analysis results: ", results.tagalog);
+    // Log analysis results
+    log(4, "English hate speech analysis results: ", englishResults);
+    log(4, "Tagalog hate speech analysis results: ", tagalogResults);
 
+    // Always return an object with both counts
     return {
-        englishHateCount,
-        tagalogHateCount,
+        englishHateCount: englishHateCount || 0, // Default to 0 if no hate speech found
+        tagalogHateCount: tagalogHateCount || 0, // Default to 0 if no hate speech found
     };
 }
+
 
 // Handle waiting (cold start delay)
 async function handleColdStart() {

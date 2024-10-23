@@ -277,6 +277,15 @@ img {
   color: var(--first-color) !important; 
 }
 
+.card__main{
+  border-color: var(--container-color);
+}
+
+.card__body{
+  background-color: var(--container-color);
+  color: var(--text-color);
+}
+
 /* Minimalist design, active link */
 /* .active-link::before{
   content: '';

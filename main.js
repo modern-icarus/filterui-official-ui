@@ -8,10 +8,24 @@ document.addEventListener("DOMContentLoaded", function() {
     const sendMessageButton = document.getElementById("send-message");
     const chatMessages = document.getElementById("chat-messages");
 
+    const strictMode = document.getElementById('strictMode');
+    const moderateMode = document.getElementById('moderateMode');
+    const freeMode = document.getElementById('freeMode');
+
+
     // if (!scanPageButton || !modalContent || !scanToggle || !userInput || !sendMessageButton || !chatMessages) {
     //     console.error("Some elements not found!");
     //     return;
     // }
+
+     // Listen for changes in mode selection
+    document.querySelectorAll('input[name="mode"]').forEach((input) => {
+        input.addEventListener('change', (event) => {
+            const selectedMode = event.target.value;
+            console.log(`Mode selected: ${selectedMode}`);
+            chrome.runtime.sendMessage({ action: "setMode", mode: selectedMode });
+        });
+    });
 
     // Event listener for Scan Page button
     scanPageButton.addEventListener('click', () => {
@@ -123,6 +137,25 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
+
+// Function to toggle off other checkboxes when one is selected
+function toggleMode(selectedMode) {
+    if (selectedMode === strictMode) {
+        moderateMode.checked = false;
+        freeMode.checked = false;
+    } else if (selectedMode === moderateMode) {
+        strictMode.checked = false;
+        freeMode.checked = false;
+    } else if (selectedMode === freeMode) {
+        strictMode.checked = false;
+        moderateMode.checked = false;
+    }
+}
+
+// Add event listeners to checkboxes
+strictMode.addEventListener('change', () => toggleMode(strictMode));
+moderateMode.addEventListener('change', () => toggleMode(moderateMode));
+freeMode.addEventListener('change', () => toggleMode(freeMode));
 
 // Helper function to show loading spinner
 function showLoadingModal(modalContent) {

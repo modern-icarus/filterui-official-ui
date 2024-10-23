@@ -33,7 +33,7 @@
                         <li class="nav__item">
                             <a href="#modes" class="nav__link">
                                 <i class='bx bx-cog nav__icon'></i>
-                                <span class="nav__name">Modes</span>
+                                <span class="nav__name">Settings</span>
                             </a>
                         </li>
 
@@ -139,13 +139,51 @@
 
             <!-- MODES -->
             <section class="container section section__height" id="modes">
-                <h2 class="section__title mt-5">Select Mode</h2>
-                
+                <h2 class="section__title mt-5">Settings</h2>
+                <div class="card card__main mx-auto shadow-none rounded-3" style="width: 18rem;">
+                    <div class="card-body card__body">
+                      <h4 class="card-title mb-2">Select Mode</h4>
+                      <div class="form-check form-switch ms-5 mb-2">
+                        <input class="form-check-input fs-6" type="checkbox" role="switch" name="mode" id="strictMode" value="strict">
+                        <label class="form-check-label fs-6" for="strictMode">Strict Mode</label>
+                      </div>
+
+                      <div class="form-check form-switch ms-5 mb-2">
+                        <input class="form-check-input fs-6" type="checkbox" role="switch" name="mode" id="moderateMode" value="moderate" checked>
+                        <label class="form-check-label fs-6" for="moderateMode">Moderate</label>
+                      </div>
+
+                      <div class="form-check form-switch ms-5 mb-2">
+                        <input class="form-check-input fs-6" type="checkbox" role="switch" name="mode" id="freeMode" value="free">
+                        <label class="form-check-label fs-6" for="freeMode">Free Mode</label>
+                      </div>
+                    </div>
+                </div>
+
+                  <div class="card card__main mx-auto shadow-none rounded-3 mt-5" style="width: 18rem;">
+                    <div class="card-body card__body">
+                      <h4 class="card-title mb-2">Filter Type</h4>
+                      <div class="form-check form-switch ms-5 mb-2">
+                        <input class="form-check-input fs-6" type="checkbox" role="switch" id="filterSwitch">
+                        <label class="form-check-label fs-6" for="filterSwitch">Hide Hate Speeches</label>
+                      </div>
+
+                      <div class="form-check form-switch ms-5 mb-2">
+                        <input class="form-check-input fs-6" type="checkbox" role="switch" id="filterSwitch">
+                        <label class="form-check-label fs-6" for="filterSwitch">Uncensored</label>
+                      </div>
+
+                      <div class="form-check form-switch ms-5">
+                        <input class="form-check-input fs-6" type="checkbox" role="switch" id="modeSwitch">
+                        <label class="form-check-label fs-6" for="filterSwitch">Highlight</label>
+                      </div>
+                    </div>
+                  </div>
             </section>
 
             <!-- FILTER -->
             <section class="container section section__height" id="filter">
-                <h2 class="section__title mt-5">Censor Type</h2>
+                <h2 class="section__title mt-5">Analytics</h2>
             </section>
 
             <!-- LOGS -->
