@@ -12,6 +12,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const moderateMode = document.getElementById('moderateMode');
     const freeMode = document.getElementById('freeMode');
 
+    const hideSwitch = document.getElementById('hideSwitch');
+    const uncensoredSwitch = document.getElementById('uncensoredSwitch');
+    const highlightSwitch = document.getElementById('highlightSwitch');
+
 
     // if (!scanPageButton || !modalContent || !scanToggle || !userInput || !sendMessageButton || !chatMessages) {
     //     console.error("Some elements not found!");
@@ -26,6 +30,7 @@ document.addEventListener("DOMContentLoaded", function() {
             chrome.runtime.sendMessage({ action: "setMode", mode: selectedMode });
         });
     });
+    
 
     // Event listener for Scan Page button
     scanPageButton.addEventListener('click', () => {
@@ -156,6 +161,25 @@ function toggleMode(selectedMode) {
 strictMode.addEventListener('change', () => toggleMode(strictMode));
 moderateMode.addEventListener('change', () => toggleMode(moderateMode));
 freeMode.addEventListener('change', () => toggleMode(freeMode));
+
+// Function to toggle off other checkboxes when one is selected
+function toggleSwitch(selectedSwitch) {
+    if (selectedSwitch === hideSwitch) {
+        uncensoredSwitch.checked = false;
+        highlightSwitch.checked = false;
+    } else if (selectedSwitch === uncensoredSwitch) {
+        hideSwitch.checked = false;
+        highlightSwitch.checked = false;
+    } else if (selectedSwitch === highlightSwitch) {
+        hideSwitch.checked = false;
+        uncensoredSwitch.checked = false;
+    }
+}
+
+// Add event listeners to checkboxes
+hideSwitch.addEventListener('change', () => toggleSwitch(hideSwitch));
+uncensoredSwitch.addEventListener('change', () => toggleSwitch(uncensoredSwitch));
+highlightSwitch.addEventListener('change', () => toggleSwitch(highlightSwitch));
 
 // Helper function to show loading spinner
 function showLoadingModal(modalContent) {
