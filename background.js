@@ -6,6 +6,7 @@ const API_TOKEN = "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";
 const COLD_START_RETRY_DELAY = 30000; // 30 seconds delay for cold start retries
 const MAX_TOKEN_LENGTH = 512; // Maximum length allowed for the models
 const CONCURRENCY_LIMIT = 5; // Limit for concurrent requests
+var hateSpeechMap = {};
 
 // Log levels: 0 = no logs, 1 = error, 2 = warn, 3 = info, 4 = debug
 let logLevel = 3;
@@ -298,15 +299,66 @@ function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function processSentencesInLoop(sentences) {
+    // Group sentences by detected language first
+    const { englishGroup, tagalogGroup } = await groupByLanguage(sentences);
+
+    // Create an array to hold all processing tasks
+    const tasks = [];
+
+    // Process English sentences
+    for (const sentence of englishGroup) {
+        tasks.push(async () => {
+            const prediction = await callHateSpeechAPI(ENGLISH_HATE_SPEECH_MODEL, sentence);
+            const flagged = prediction.filter(pred => pred.label === "HATE" && pred.score >= getModeThreshold());
+            if (flagged.length > 0) {
+                hateSpeechMap[sentence] = flagged; // Store the sentence and its predictions
+            }
+            return { sentence, prediction: flagged.length > 0 ? flagged : null };
+        });
+    }
+
+    // Process Tagalog sentences
+    for (const sentence of tagalogGroup) {
+        tasks.push(async () => {
+            const prediction = await callHateSpeechAPI(TAGALOG_HATE_SPEECH_MODEL, sentence);
+            const flagged = prediction.filter(pred => pred.label === "LABEL_1" && pred.score >= getModeThreshold());
+            if (flagged.length > 0) {
+                hateSpeechMap[sentence] = flagged; // Store the sentence and its predictions
+            }
+            return { sentence, prediction: flagged.length > 0 ? flagged : null };
+        });
+    }
+
+    // Execute tasks with throttling
+    const results = await throttlePromises(tasks, CONCURRENCY_LIMIT);
+
+    // Log the results
+    results.forEach(result => {
+        if (result.prediction) {
+            log(3, `Processed sentence: "${result.sentence}", Flagged as hate speech: ${JSON.stringify(result.prediction)}`);
+        } else {
+            log(3, `Processed sentence: "${result.sentence}", No hate speech detected.`);
+        }
+    });
+
+    return results;
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "scanPage") {
         chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
             chrome.tabs.sendMessage(tabs[0].id, { action: "scanPage" }, async (response) => {
                 if (response && response.sentences) {
                     log(3, "Collected sentences: ", response.sentences);
+                    
+
                     try {
+
+                        const hateSpeechResults = await processSentencesInLoop(response.sentences);
+
                         const hateSpeechCount = await processSentences(response.sentences);
-                        sendResponse({ scanResult: "success", detectedHateSpeeches: hateSpeechCount });
+                        sendResponse({ scanResult: "success", detectedHateSpeeches: hateSpeechCount, hateSpeechMap });
                     } catch (error) {
                         if (isColdStartError(error)) {
                             const coldStartResponse = await handleColdStart();

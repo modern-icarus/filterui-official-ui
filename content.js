@@ -22,13 +22,32 @@ const excludedPatterns = [
 ];
 
 let observer;
-const loggedSentences = new Set(); // Track logged sentences
+const loggedSentences = new Set(); // Track logged sentences 
+const censoredText = '<span style="font-family: Arial, sans-serif; font-style: italic; font-size: 14px; color: red;"><i>ⓘ This content is deemed to be hate speech.</i></span>';
+const highlightedText = '<span style="background-color: yellow; font-weight: bold; padding: 2px 4px; border-radius: 3px; color: red;">';
+const originalTexts = new Map(); // To store original text of each element
+var hateSpeechMap = {};
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scanPage") {
     const sentences = extractValidSentences();
+    hateSpeechMap = request.hateSpeechMap || {};
+
     console.log(`Scanned and found ${sentences.length} unique sentences.`);
+
+    let hateSpeechDetails = '';
+
+    toggleCensorship(hateSpeechMap, true);
+
     sendResponse({ sentences });
+  }
+
+  if (request.action == "toggleCensorship") {
+    toggleCensorship(request.hateSpeechMap, request.toggleState);
+  }
+
+  if(request.action == "toggleHighlighted") {
+    toggleHighlighted(request.hateSpeechMap, request.toggleState);
   }
 
   if (request.action === "toggleObserver") {
@@ -43,7 +62,98 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     }
   }
+
+  if (request.action === "processSentence" && request.sentence) {
+    
+  }
 });
+
+function toggleCensorship(hateSpeechMap, enable = true) {
+  const elements = document.querySelectorAll('div[dir="auto"], span[dir="auto"]');
+
+  elements.forEach(el => {
+    const textContent = el.innerText.trim().toLowerCase();
+    const originalText = originalTexts.get(el);
+    
+
+    // Iterate over the hateSpeechMap to check for matches
+    for (const [sentence, predictions] of Object.entries(hateSpeechMap)) {
+      if (textContent === sentence.toLowerCase()) {
+        if (enable) {
+          // Store original text if not already stored
+          if (!originalTexts.has(el)) {
+            originalTexts.set(el, el.innerHTML); // Store the original HTML content
+          }
+
+          // Replace with censored text
+          el.innerHTML = censoredText;
+          isCensored = false;
+        }
+        break; // Exit the loop once a match is found
+      }
+    }
+
+    // If enabling censorship is false
+    if (!enable) {
+      // Check if the element's content matches the censored text
+      if (el.innerHTML === censoredText) {
+        // Restore original text
+        if (originalTexts.has(el)) {
+          el.innerHTML = originalTexts.get(el);
+        }
+      }
+    }
+  });
+}
+
+function toggleHighlighted(hateSpeechMap, enable) {
+  const elements = document.querySelectorAll('div[dir="auto"], span[dir="auto"]');
+
+  elements.forEach(el => {
+    const textContent = el.innerText.trim().toLowerCase();
+    const originalText = originalTexts.get(el);
+
+    // Iterate over the hateSpeechMap to check for matches
+    for (const [sentence, predictions] of Object.entries(hateSpeechMap)) {
+      if (textContent === sentence.toLowerCase()) {
+        if (enable) {
+          // Store original text if not already stored
+          if (!originalTexts.has(el)) {
+            originalTexts.set(el, el.innerHTML); // Store the original HTML content
+          }
+
+          // Replace with highlighted text
+          el.innerHTML = `${highlightedText}${textContent}</span>`;
+        }
+        break; // Exit the loop once a match is found
+      } else if (el.innerHTML === censoredText) {
+        // Replace with highlighted text
+        el.innerHTML = `${highlightedText}${getPlainText(originalTexts.get(el))}</span>`;
+        break;
+      }
+    }
+
+    // If enabling censorship is false
+    if (!enable) {
+
+      // Check if the element's content starts with the highlighted text
+      if (el.innerHTML.startsWith(highlightedText)) {
+        // Restore original text
+        if (originalTexts.has(el)) {
+          el.innerHTML = originalTexts.get(el);
+        }
+      }
+    }
+  });
+
+}
+
+function getPlainText(html) {
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  return tempDiv.textContent || tempDiv.innerText || "";
+}
+
 
 // Check if a sentence matches any excluded patterns (string or regex)
 function isExcludedSentence(sentence) {

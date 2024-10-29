@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const hideSwitch = document.getElementById('hideSwitch');
     const uncensoredSwitch = document.getElementById('uncensoredSwitch');
     const highlightSwitch = document.getElementById('highlightSwitch');
+    var hateSpeechMap = {};
+    const defaultFalse = false;
 
 
     // if (!scanPageButton || !modalContent || !scanToggle || !userInput || !sendMessageButton || !chatMessages) {
@@ -43,7 +45,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.error("Error: " + chrome.runtime.lastError.message);
                 modalContent.innerHTML = `<p>Could not establish connection. Please refresh the page and try again.</p>`;
             } else {
-                handleScanResponse(response, modalContent);
+                hateSpeechMap = response.hateSpeechMap || {};
+
+                handleScanResponse(response, modalContent, hateSpeechMap);
+
+                chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                    chrome.tabs.sendMessage(tabs[0].id, { action: "scanPage", hateSpeechMap });
+                });
             }
         });
     });
@@ -64,6 +72,30 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             chrome.tabs.sendMessage(tabs[0].id, { action: "toggleObserver", enabled: toggleState });
         });
+    });
+
+    hideSwitch.addEventListener('click', () => {  
+        const enable = hideSwitch.classList.toggle('enabled');
+        const toggleState = event.target.checked;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleCensorship", toggleState, hateSpeechMap });
+        });
+
+        if(highlightSwitch.checked) {
+            highlightSwitch.checked = false;
+        }
+    });
+
+    highlightSwitch.addEventListener('click', () => {
+        const enable = highlightSwitch.classList.toggle('enabled');
+        const toggleState = event.target.checked;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleHighlighted", toggleState, hateSpeechMap });
+        });
+        
+        if(hideSwitch.checked) {
+            hideSwitch.checked = false;
+        }
     });
 
     // Chatbox functionality
@@ -194,13 +226,14 @@ function showLoadingModal(modalContent) {
 }
 
 // Helper function to handle the scan response
-function handleScanResponse(response, modalContent) {
+function handleScanResponse(response, modalContent, hateSpeechMap) {
     console.log("Response object:", response);
 
     const scanResult = response.scanResult || ""; 
     const detectedHateSpeeches = response.detectedHateSpeeches.englishHateCount + response.detectedHateSpeeches.tagalogHateCount;
     const englishHateCount = response.detectedHateSpeeches.englishHateCount || 0;
     const tagalogHateCount = response.detectedHateSpeeches.tagalogHateCount || 0;
+    
 
     if (scanResult === "coldStart") {
         modalContent.innerHTML = `
@@ -213,6 +246,19 @@ function handleScanResponse(response, modalContent) {
             <p>Cold start occurs when the API fell asleep... please try again after a few seconds</p>
         `;
     } else if (scanResult === "success") {
+
+        // Dito ko tinetesting 
+
+        let hateSpeechDetails = '';
+
+        // List hate speeches from the hateSpeechMap
+        for (const [sentence, predictions] of Object.entries(hateSpeechMap)) {
+            hateSpeechDetails += `<p><strong>Sentence:</strong> "${sentence}"<br>`;
+            hateSpeechDetails += `<strong>Predictions:</strong> ${predictions.map(pred => `${pred.label} (Score: ${pred.score})`).join(', ')}</p>`;
+        
+            replaceHateSpeech(sentence);
+        }
+
         modalContent.innerHTML = `
             <div class="alert alert-success d-flex align-items-center p-2 me-0" role="alert">
                 <i class='bx bxs-check-circle fs-1'></i>
@@ -220,7 +266,7 @@ function handleScanResponse(response, modalContent) {
                     Scan Successful!
                 </div>
             </div>
-            <p>Detected ${detectedHateSpeeches} instances of hate speech.</p>
+            <p>Detected ${detectedHateSpeeches} instances of hate speech. Total sentences processed: ${Object.keys(hateSpeechMap).length}</p>
             <button class="btn btn-primary justify-content-center- align-items-end" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSuccess" aria-expanded="false" aria-controls="collapseSuccess">
                 View Details
             </button>
@@ -228,6 +274,10 @@ function handleScanResponse(response, modalContent) {
                 <div class="card card-body" style="background-color: #423726; color: #AEAAAA">
                     <p>English Hate Speech: ${englishHateCount}</p>
                     <p class="mb-0">Tagalog Hate Speech: ${tagalogHateCount}</p>
+                    <div class="mt-2">
+                        <h5>Hate Speech Details:</h5>
+                        ${hateSpeechDetails}
+                    </div>
                 </div>
             </div>
         `;
@@ -242,4 +292,9 @@ function handleScanResponse(response, modalContent) {
             <p>Error occurred! Please restart the page. If error still occurs please try again later!</p>
         `;
     }
+}
+
+
+function replaceHateSpeech(data) {
+    
 }
