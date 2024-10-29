@@ -95,7 +95,7 @@ async function detectLanguage(sentence) {
 
     if (result && result.length > 0) {
         if (result[0].label === "eng_Latn") language = "english";
-        if (result[0].label === "tgl_Latn" || "ceb_Latn") language = "tagalog";
+        if (result[0].label === "tgl_Latn" || result[0].label === "ceb_Latn") language = "tagalog";
     }
 
     // Log language detection
