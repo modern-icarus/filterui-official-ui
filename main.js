@@ -271,13 +271,11 @@ function handleScanResponse(response, modalContent, hateSpeechMap) {
                 View Details
             </button>
             <div class="collapse mt-3 mb-3" id="collapseSuccess">
-                <div class="card card-body" style="background-color: #423726; color: #AEAAAA">
+                <div class="card card-body" style="background-color: #423726; color: #AEAAAA max-height: 20vh; overflow-y: auto;">
                     <p>English Hate Speech: ${englishHateCount}</p>
-                    <p class="mb-0">Tagalog Hate Speech: ${tagalogHateCount}</p>
-                    <div class="mt-2">
-                        <h5>Hate Speech Details:</h5>
-                        ${hateSpeechDetails}
-                    </div>
+                    <p>Tagalog Hate Speech: ${tagalogHateCount}</p>
+                    <p>Hate Speech Details:</p>
+                    ${hateSpeechDetails}
                 </div>
             </div>
         `;

@@ -9,6 +9,7 @@
   --first-color: #FFA116;
   --second-color: #423726;
   --blue-color: rgb(10, 132, 255);
+  --sec-blue-color: rgb(10, 132, 255, 0.1);
   --purple-color: rgb(191, 90, 242);
   --first-color-alt: hsl(var(--hue), var(--sat), 36%);
   --title-color: #AEAAAA;
@@ -228,6 +229,16 @@ img {
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+.chat-input{
+  border-color: var(--blue-color);
+}
+
+.type__btn{
+  border-color: var(--blue-color) !important;
+  color: var(--blue-color) !important;
+  background-color: var(--sec-blue-color) !important;
 }
 
 #chat-messages {
