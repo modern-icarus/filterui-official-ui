@@ -222,23 +222,35 @@ function startObserver() {
   console.log('Mutation Observer started and watching for changes in the body.');
 }
 
-// Process text content from a node
 function processNodeText(node) {
   const relevantElements = node.querySelectorAll('div[dir="auto"], span[dir="auto"]');
 
   relevantElements.forEach(el => {
-    const textContent = el.innerText.trim();
-    if (textContent) {
-      const sentences = extractValidSentencesFromText(textContent);
-      sentences.forEach(sentence => {
-        if (!loggedSentences.has(sentence)) { // Check if sentence is already logged
-          loggedSentences.add(sentence); // Add to logged sentences set
-          console.log('Valid sentence extracted:', sentence);
-          // Send valid sentence to the background for processing
-          chrome.runtime.sendMessage({ action: "processSentence", sentence });
-        }
-      });
-    }
+      const textContent = el.innerText.trim();
+      if (textContent) {
+          const sentences = extractValidSentencesFromText(textContent);
+          sentences.forEach(sentence => {
+              if (!loggedSentences.has(sentence)) { // Check if sentence is already logged
+                  loggedSentences.add(sentence); // Add to logged sentences set
+                  console.log('Valid sentence extracted:', sentence);
+
+                  // Send valid sentence to the background for processing
+                  chrome.runtime.sendMessage({ action: "processSentence", sentence }, function(response) {
+                      if (chrome.runtime.lastError) {
+                          console.error("Error receiving response:", chrome.runtime.lastError.message);
+                      } else if (response) {
+                          console.log("Response from background script:", response);
+                          // If flagged, replace sentence with censored text
+                          if (response.result === "FLAGGED") {
+                              el.innerHTML = censoredText;
+                          }
+                      } else {
+                          console.warn("No response received from background script for:", sentence);
+                      }
+                  });
+              }
+          });
+      }
   });
 }
 

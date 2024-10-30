@@ -378,10 +378,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// Listen for messages and process collected sentences
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-
-    // Handle real-time detection messages
     if (request.action === "processSentence" && request.sentence) {
         try {
             // Step 1: Detect language
@@ -391,29 +388,29 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             let model = language === "english" ? ENGLISH_HATE_SPEECH_MODEL : TAGALOG_HATE_SPEECH_MODEL;
             const prediction = await callHateSpeechAPI(model, request.sentence);
 
-            // Step 3: Log predictions and send response
-            prediction.forEach(pred => {
-                log(3, `Real-time Detection: Sentence "${request.sentence}", Prediction Label: ${pred.label}, Score: ${pred.score}`);
-            });
+            // Step 3: Define threshold and check if flagged
+            const threshold = getModeThreshold();
+            const isFlagged = prediction.some(pred =>
+                (model === ENGLISH_HATE_SPEECH_MODEL && pred.label === "HATE" && pred.score >= threshold) ||
+                (model === TAGALOG_HATE_SPEECH_MODEL && pred.label === "LABEL_1" && pred.score >= threshold)
+            );
 
-            // Send response with prediction results
-            sendResponse({ status: "success", sentence: request.sentence, prediction });
+            // Send response with "FLAGGED" or "NOT FLAGGED"
+            sendResponse({ status: "success", sentence: request.sentence, result: isFlagged ? "FLAGGED" : "NOT FLAGGED" });
         } catch (error) {
-            // Handle cold start or API errors
             if (isColdStartError(error)) {
                 await handleColdStart();
             }
-            log(1, "Error processing sentence in real-time detection: ", error.message);
+            log(1, "Error processing sentence in real-time detection:", error.message);
             sendResponse({ status: "error", error: error.message });
         }
 
-        // Return true to indicate that the response will be sent asynchronously
+        // Return true to keep the message channel open for async response
         return true;
     }
-
-    // Ensuring the message handler returns true for async responses
     return true;
 });
+
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Timeout to keep service worker alive
