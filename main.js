@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", function() {
             chrome.tabs.sendMessage(tabs[0].id, { action: "toggleObserver", enabled: toggleState });
         });
 
-        uncensoredSwitch.checked = toggleState;
+        // uncensoredSwitch.checked = toggleState;
     });
 
     hideSwitch.addEventListener('click', () => {  

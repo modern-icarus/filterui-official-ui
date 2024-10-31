@@ -281,29 +281,43 @@ function processNodeText(node) {
                   loggedSentences.add(sentence); // Add to logged sentences set
                   console.log('Valid sentence extracted:', sentence);
 
-                  // Send valid sentence to the background for processing
-                  chrome.runtime.sendMessage({ action: "processSentence", sentence }, function(response) {
-                      if (chrome.runtime.lastError) {
-                          console.error("Error receiving response:", chrome.runtime.lastError.message);
-                      } else if (response) {
-                          console.log("Response from background script:", response);
-                          // If flagged, replace sentence with censored text
-                          if (response.result === "FLAGGED") {
+                  // Function to send sentence with retry mechanism
+                  function sendSentenceWithRetry(sentence, retries = 0) {
+                      chrome.runtime.sendMessage({ action: "processSentence", sentence }, function(response) {
+                          if (chrome.runtime.lastError) {
+                              console.error("Error receiving response:", chrome.runtime.lastError.message);
+                          } else if (response.status === "error") {
+                              console.log("Response from background script:", response);
+                              // Check for error 503 or other failed responses
+                              if (response.error.includes("503") || response.error.includes("Failed to fetch")) {
+                                  // Retry after 30 seconds
+                                  setTimeout(() => {
+                                      console.log(`Retrying sentence: "${sentence}", Attempt: ${retries + 1}`);
+                                      sendSentenceWithRetry(sentence, retries + 1);
+                                  }, 30000);
+                              } else {
+                                  console.warn("No response received from background script for:", sentence);
+                              }
+                          } else if (response.result === "FLAGGED") {
                               if (!originalTextsRealtime.has(el)) {
-                                originalTextsRealtime.set(el, el.innerHTML);
+                                  originalTextsRealtime.set(el, el.innerHTML);
                               }
 
                               el.innerHTML = censoredText;
+                          } else {
+                              console.log("Successfully processed sentence:", sentence);
                           }
-                      } else {
-                          console.warn("No response received from background script for:", sentence);
-                      }
-                  });
+                      });
+                  }
+
+                  // Send the sentence with the retry mechanism
+                  sendSentenceWithRetry(sentence);
               }
           });
       }
   });
 }
+
 
 // Extract valid sentences from a given text
 function extractValidSentencesFromText(text) {
