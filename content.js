@@ -26,7 +26,11 @@ const loggedSentences = new Set(); // Track logged sentences
 const censoredText = '<span style="font-family: Arial, sans-serif; font-style: italic; font-size: 14px; color: red;"><i>ⓘ This content is deemed to be hate speech.</i></span>';
 const highlightedText = '<span style="background-color: yellow; font-weight: bold; padding: 2px 4px; border-radius: 3px; color: red;">';
 const originalTexts = new Map(); // To store original text of each element
+const originalTextsRealtime = new Map();
+var isRealtimeCensored = true;
+
 var hateSpeechMap = {};
+var hateSpeechMapRealtime = {};
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scanPage") {
@@ -44,6 +48,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action == "toggleCensorship") {
     toggleCensorship(request.hateSpeechMap, request.toggleState);
+    toggleCensorshipRealtime(request.toggleState);
   }
 
   if(request.action == "toggleHighlighted") {
@@ -66,7 +71,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "processSentence" && request.sentence) {
     
   }
+
+  if(request.action == "toggleCensorshipRealtime") {
+    toggleCensorshipRealtime(request.toggleState);
+  }
 });
+
+function toggleCensorshipRealtime(enable) {
+  const elements = document.querySelectorAll('div[dir="auto"], span[dir="auto"]');
+
+  elements.forEach(el => {
+    if(!enable) {
+      if (el.innerHTML === censoredText) {
+        // Restore original text
+        if (originalTextsRealtime.has(el)) {
+          el.innerHTML = originalTextsRealtime.get(el);
+        }
+      }
+    } else {
+      if (originalTextsRealtime.has(el)) {
+        el.innerHTML = censoredText;
+      }
+    }
+  });
+}
 
 function toggleCensorship(hateSpeechMap, enable = true) {
   const elements = document.querySelectorAll('div[dir="auto"], span[dir="auto"]');
@@ -84,6 +112,7 @@ function toggleCensorship(hateSpeechMap, enable = true) {
           if (!originalTexts.has(el)) {
             originalTexts.set(el, el.innerHTML); // Store the original HTML content
           }
+          
 
           // Replace with censored text
           el.innerHTML = censoredText;
@@ -123,7 +152,7 @@ function toggleHighlighted(hateSpeechMap, enable) {
           }
 
           // Replace with highlighted text
-          el.innerHTML = `${highlightedText}${textContent}</span>`;
+          el.innerHTML = `${highlightedText}${el.innerHTML}</span>`;
         }
         break; // Exit the loop once a match is found
       } else if (el.innerHTML === censoredText) {
@@ -141,6 +170,24 @@ function toggleHighlighted(hateSpeechMap, enable) {
         // Restore original text
         if (originalTexts.has(el)) {
           el.innerHTML = originalTexts.get(el);
+        }
+      }
+    }
+
+    if(originalTextsRealtime.has(el)) {
+      if(enable) {
+        if (originalTextsRealtime.has(el)) {
+          el.innerHTML = `${highlightedText}${getPlainText(originalTextsRealtime.get(el))}</span>`;
+        }
+
+        if(el.innerHTML === censoredText) {
+          el.innerHTML = `${highlightedText}${getPlainText(originalTextsRealtime.get(el))}</span>`;
+        }
+      } else {
+        if(el.innerHTML.startsWith(highlightedText)) {
+          if (originalTextsRealtime.has(el)) {
+            el.innerHTML = originalTextsRealtime.get(el);
+          } 
         }
       }
     }
@@ -242,6 +289,10 @@ function processNodeText(node) {
                           console.log("Response from background script:", response);
                           // If flagged, replace sentence with censored text
                           if (response.result === "FLAGGED") {
+                              if (!originalTextsRealtime.has(el)) {
+                                originalTextsRealtime.set(el, el.innerHTML);
+                              }
+
                               el.innerHTML = censoredText;
                           }
                       } else {

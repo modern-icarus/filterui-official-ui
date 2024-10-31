@@ -72,6 +72,8 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             chrome.tabs.sendMessage(tabs[0].id, { action: "toggleObserver", enabled: toggleState });
         });
+
+        uncensoredSwitch.checked = toggleState;
     });
 
     hideSwitch.addEventListener('click', () => {  
@@ -96,6 +98,14 @@ document.addEventListener("DOMContentLoaded", function() {
         if(hideSwitch.checked) {
             hideSwitch.checked = false;
         }
+    });
+
+    uncensoredSwitch.addEventListener('click', () => {
+        const enable = uncensoredSwitch.classList.toggle('enabled');
+        const toggleState = event.target.checked;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleCensorshipRealtime", toggleState });
+        });
     });
 
     // Chatbox functionality
