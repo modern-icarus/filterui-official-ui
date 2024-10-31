@@ -19,10 +19,18 @@ document.addEventListener("DOMContentLoaded", function() {
     const defaultFalse = false;
 
 
+
     // if (!scanPageButton || !modalContent || !scanToggle || !userInput || !sendMessageButton || !chatMessages) {
     //     console.error("Some elements not found!");
     //     return;
     // }
+
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (request.action === "updateBadge") {
+            const notifBadge = document.querySelector(".nav__notif notif__badge");
+            notifBadge.innerHTML = request.count > 99 ? "99+" : request.count.toString();
+        }
+    });    
 
      // Listen for changes in mode selection
     document.querySelectorAll('input[name="mode"]').forEach((input) => {
@@ -32,6 +40,7 @@ document.addEventListener("DOMContentLoaded", function() {
             chrome.runtime.sendMessage({ action: "setMode", mode: selectedMode });
         });
     });
+    
     
 
     // Event listener for Scan Page button
@@ -185,6 +194,13 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+
+// FUNCTIONS HERE
+
+function toggleNotificationCard() {
+    notifCard.style.display = notifCard.style.display === "none" ? "block" : "none";
+}
+
 // Function to toggle off other checkboxes when one is selected
 function toggleMode(selectedMode) {
     if (selectedMode === strictMode) {
@@ -251,6 +267,7 @@ function handleScanResponse(response, modalContent, hateSpeechMap) {
                 <i class='bx bxs-error-circle fs-1'></i>
                 <div class="ms-2 me-2">
                     Cold Start Detected!
+                    <button class="btn btn-primary me-2" type="button" id="scanPage" data-bs-toggle="modal" data-bs-target="#resultModal">Retry<i class='bx bx-search fs-2 ms-1'></i></button>
                 </div>
             </div>
             <p>Cold start occurs when the API fell asleep... please try again after a few seconds</p>

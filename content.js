@@ -23,7 +23,7 @@ const excludedPatterns = [
 
 let observer;
 const loggedSentences = new Set(); // Track logged sentences 
-const censoredText = '<span style="font-style: italic; color: red;"><i>ⓘ This content is deemed to be hate speech.</i></span>';
+const censoredText = '<span style="font-style: italic;"><i>Hate Speech</i></span>';
 const highlightedText = '<span style="background-color: yellow;">';
 const originalTexts = new Map(); // To store original text of each element
 const originalTextsRealtime = new Map();

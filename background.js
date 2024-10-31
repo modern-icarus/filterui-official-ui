@@ -377,6 +377,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 });
+let notifCount = 0;
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "processSentence" && request.sentence) {
@@ -395,8 +396,17 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 (model === TAGALOG_HATE_SPEECH_MODEL && pred.label === "LABEL_1" && pred.score >= threshold)
             );
 
+
+            if (isFlagged) {
+                notifCount++;
+                chrome.runtime.sendMessage({ action: "updateBadge", count: notifCount });
+                console.log("Hate speech count updated:", notifCount);
+            }
+            
+
             // Send response with "FLAGGED" or "NOT FLAGGED"
             sendResponse({ status: "success", sentence: request.sentence, result: isFlagged ? "FLAGGED" : "NOT FLAGGED" });
+
         } catch (error) {
             if (isColdStartError(error)) {
                 await handleColdStart();
