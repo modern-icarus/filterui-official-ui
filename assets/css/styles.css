@@ -173,13 +173,20 @@ img {
 }
 
 .nav__img {
+  margin-right: 0;
+  margin-left: 1rem;
   width: 32px;
 }
 
 .nav__logo {
   color: var(--title-color);
   font-weight: 600;
-  margin-left: 1rem;
+  margin-left: 0;
+}
+
+.nav__notif{
+  color: var(--first-color);
+  margin-left: 12rem;
 }
 
 @media screen and (max-width: 767px) {
