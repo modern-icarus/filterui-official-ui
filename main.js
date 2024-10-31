@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === "updateBadge") {
-            const notifBadge = document.querySelector(".nav__notif notif__badge");
+            const notifBadge = document.querySelector(".nav__notif .notif__badge");
             notifBadge.innerHTML = request.count > 99 ? "99+" : request.count.toString();
         }
     });    
