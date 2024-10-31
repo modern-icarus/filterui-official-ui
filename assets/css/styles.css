@@ -126,6 +126,12 @@ img {
   box-shadow: 0 0 0.1rem var(--title-color) !important;
 }
 
+.manual__btn{
+  background-color: var(--second-color) !important;
+  border-color: var(--first-color) !important;
+  color: var(--first-color) !important;
+}
+
 .btn{
   background-color: var(--second-color) !important;
   border-color: var(--first-color) !important;
@@ -310,6 +316,7 @@ img {
 .btn-close{
   color: var(--first-color) !important; 
 }
+
 
 .card__main{
   border-color: var(--container-color);

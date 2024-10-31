@@ -64,7 +64,7 @@
                 
                 <div class="position-relative p-0 nav__notif mt-1">
                     <button class="notif__btn">
-                        <i class="bx bxs-bell fs-1"></i>
+                        <i class='bx bxs-bell fs-1' ></i>
                     </button>
                     <span class="position-absolute top-0 start-0 translate-middle notif__badge badge rounded-pill bg-danger">
                         0
@@ -88,7 +88,7 @@
                                 <div class="accordion-body">
                                     <strong>Enable Real Time Detection. </strong> Automatically scan the current page and also new texts that will appear. 
                                     Using this feature will consume higher resources.
-                                    <div class="form-check form-switch fs-1 justify-content-center align-items-center mx-auto">
+                                    <div class="form-check form-switch fs-1 justify-content-center align-items-center mx-auto mb-2">
                                         <input class="form-check-input" type="checkbox" role="switch" id="scanToggle">
                                     </div>
                                 </div>
@@ -101,9 +101,11 @@
                             </h2>
                             <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
                                 <div class="accordion-body mb-2">
-                                    <strong>Manually scan the page. </strong>Using this manual mode will only scan the currently loaded page elements, resulting in lower resource usage.
+                                    <strong>Manually scan the page. </strong>Using this manual mode will only scan the currently loaded page elements, resulting in lower resource usage. Tap the button to scan.
                                     <div class="d-grid gap-2 col-6 mx-auto mt-3">
-                                        <button class="btn btn-primary me-2" type="button" id="scanPage" data-bs-toggle="modal" data-bs-target="#resultModal">Scan Page<i class='bx bx-search fs-2 ms-1'></i></button>
+                                        <div class="justify-content-start align-items-start mx-auto">
+                                            <button class="manual__btn pt-1" style="width: 3rem;" type="button" id="scanPage" data-bs-toggle="modal" data-bs-target="#resultModal"><i class='bx bx-file-find fs-1'></i></i></i></button>
+                                        </div>
                                         <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered m-3">
                                               <div class="modal-content">
