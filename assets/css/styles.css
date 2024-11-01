@@ -103,15 +103,20 @@ img {
 }
 
 .list-group-item{
+  border-radius: 1rem;
   background-color: var(--container-color) !important;
   color: var(--text-color) !important;
   border: none;
 }
 
+.list-group-item:hover {
+  color: white !important;
+  background-color:  #333333 !important;
+}
+
 .accordion__sec{
   color: var(--text-color);
   background-color: var(--container-color) !important;
-
 }
 
 .first__accordion__title{
@@ -166,6 +171,10 @@ img {
 .third__accordion__title:focus {
   box-shadow: 0 0 0 0.1rem var(--blue-color) !important; 
   outline: none;
+}
+
+.form-check-input:hover{
+  cursor: pointer !important;
 }
 
 .form-check-input:checked {
