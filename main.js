@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function() {
     var hateSpeechMap = {};
     const defaultFalse = false;
 
-    const startupMessage = "Type a sentence and I will try to understand whether it is hate speech or not!";
+    const startupMessage = "Type a sentence and I will try to determine whether it is hate speech or not!";
 
     // if (!scanPageButton || !modalContent || !scanToggle || !userInput || !sendMessageButton || !chatMessages) {
     //     console.error("Some elements not found!");
