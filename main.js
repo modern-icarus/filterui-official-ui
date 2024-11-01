@@ -18,19 +18,107 @@ document.addEventListener("DOMContentLoaded", function() {
     var hateSpeechMap = {};
     const defaultFalse = false;
 
-
-
     // if (!scanPageButton || !modalContent || !scanToggle || !userInput || !sendMessageButton || !chatMessages) {
     //     console.error("Some elements not found!");
     //     return;
     // }
 
+    // Event listener for opening the notification card
+    document.getElementById("notifBtn").addEventListener("click", function() {
+        const notifCard = document.getElementById("notifCard");
+        const isCardVisible = notifCard.style.display === "block";
+        notifCard.style.display = isCardVisible ? "none" : "block";
+
+        // Only update the timeAgo when the card is shown (reopened)
+        if (!isCardVisible) {
+            updateNotificationsTimeAgo();
+        }
+    });
+
+     // Hide card when clicking outside
+     document.addEventListener("click", function(event) {
+        const notifCard = document.getElementById("notifCard");
+        const notifBtn = document.getElementById("notifBtn");
+        if (!notifCard.contains(event.target) && !notifBtn.contains(event.target)) {
+            notifCard.style.display = "none";
+        }
+    });
+
+          // Update badge and notification list upon receiving messages
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === "updateBadge") {
             const notifBadge = document.querySelector(".nav__notif .notif__badge");
             notifBadge.innerHTML = request.count > 99 ? "99+" : request.count.toString();
+
+            const notifList = document.querySelector("#notifCard .list-group");
+            const defaultMessage = document.getElementById("defaultMessage");
+
+            // Hide the default message if a flagged sentence is added
+            if (defaultMessage) {
+                defaultMessage.style.display = "none";
+            }
+
+            // Ensure current timestamp is stored properly
+            const timestamp = Date.now(); // Save the current timestamp
+            const timeAgo = getTimeDifference(timestamp); // Calculate timeAgo based on the current time
+
+            // Create new notification item
+            const newNotifItem = document.createElement("li");
+            newNotifItem.className = "list-group-item";
+            newNotifItem.setAttribute('data-timestamp', timestamp); // Store the timestamp for later updates
+            newNotifItem.innerHTML = `<em>"${request.flaggedSentence}"</em> was flagged as hate speech • ${timeAgo}`; // Fix display
+
+            notifList.appendChild(newNotifItem);
+
+            // Log to check if the timestamp is being set correctly
+            console.log("Notification created with timestamp: ", timestamp);
         }
-    });    
+    });
+
+    // Function to update the timeAgo for each notification when the card is opened
+    function updateNotificationsTimeAgo() {
+        const notifItems = document.querySelectorAll("#notifCard .list-group-item");
+        notifItems.forEach((item) => {
+            const timestamp = Number(item.getAttribute('data-timestamp')); // Ensure the timestamp is retrieved as a number
+
+            // Log to ensure the timestamp is being retrieved correctly
+            console.log("Updating notification with timestamp: ", timestamp);
+
+            if (timestamp) {
+                const timeAgo = getTimeDifference(timestamp); // Calculate the time difference
+                const sentence = item.querySelector("em").innerHTML; // Extract the sentence part from the notification
+
+                // Directly update the entire notification message with new timeAgo
+                item.innerHTML = `<div class="d-flex justify-content-between align-items-center">
+                                <span><em>"${sentence}"</em> was flagged as hate speech. • ${timeAgo}</span>
+                                <i class='bx bx-dots-horizontal-rounded fs-1 ms-1'></i>
+                            </div>`;
+
+                // Log to check if the timeAgo is being calculated correctly
+                console.log("Updated timeAgo: ", timeAgo);
+            }
+        });
+    }
+
+    // Function to calculate time difference
+    function getTimeDifference(timestamp) {
+        const now = Date.now();
+        const diffInSeconds = Math.floor((now - timestamp) / 1000);
+
+        // Log the values for debugging
+        console.log("Now:", now, "Timestamp:", timestamp, "Difference in seconds:", diffInSeconds);
+
+        if (diffInSeconds < 60) return `${diffInSeconds}s`;
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        if (diffInMinutes < 60) return `${diffInMinutes}m`;
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) return `${diffInHours}hr`;
+        const diffInDays = Math.floor(diffInHours / 24);
+        return `${diffInDays}d`;
+    }
+
+    
+     
 
      // Listen for changes in mode selection
     document.querySelectorAll('input[name="mode"]').forEach((input) => {
@@ -197,9 +285,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // FUNCTIONS HERE
 
-function toggleNotificationCard() {
-    notifCard.style.display = notifCard.style.display === "none" ? "block" : "none";
-}
+
 
 // Function to toggle off other checkboxes when one is selected
 function toggleMode(selectedMode) {

@@ -399,9 +399,17 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
             if (isFlagged) {
                 notifCount++;
-                chrome.runtime.sendMessage({ action: "updateBadge", count: notifCount });
+                chrome.runtime.sendMessage({
+                    action: "updateBadge",
+                    count: notifCount,
+                    flaggedSentence: request.sentence,
+                    timestamp: Date.now()  // Add current timestamp in milliseconds
+                });
                 console.log("Hate speech count updated:", notifCount);
             }
+            
+            
+            
             
 
             // Send response with "FLAGGED" or "NOT FLAGGED"

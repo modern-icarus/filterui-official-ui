@@ -68,6 +68,10 @@ img {
   height: auto;
 }
 
+#notificationList::-webkit-scrollbar-track {
+  background: var(--container-color) !important;
+}
+
 /* REUSABLE CSS CLASSES */
 .section {
   padding: 4.5rem 0 2rem;
@@ -91,6 +95,17 @@ img {
   margin-right: 1rem;
   margin-left: auto;
   margin-right: auto;
+}
+
+.card{
+  background-color: var(--container-color);
+  color: var(--first-color)
+}
+
+.list-group-item{
+  background-color: var(--container-color) !important;
+  color: var(--text-color) !important;
+  border: none;
 }
 
 .accordion__sec{
