@@ -88,17 +88,23 @@ async function throttlePromises(tasks, concurrencyLimit) {
     return Promise.all(results);
 }
 
-// Detect language of a sentence and log
 async function detectLanguage(sentence) {
     const result = await callHuggingFaceAPI(LANGUAGE_DETECTION_MODEL, sentence);
-    let language = "english"; // Default to English
+    let language = "english"; // Default to 'english' if no specific language is detected
 
     if (result && result.length > 0) {
-        if (result[0].label === "eng_Latn") language = "english";
-        if (result[0].label === "tgl_Latn" || result[0].label === "ceb_Latn") language = "tagalog";
+        const isFilipinoLanguage = result.some(pred => 
+            ["tgl_Latn", "ceb_Latn", "war_Latn"].includes(pred.label) && pred.score > 0.1 //tagalog, cebuano, waray
+        );
+        const isEnglish = result.some(pred => pred.label === "eng_Latn" && pred.score > 0.1);
+
+        if (isFilipinoLanguage) {
+            language = "tagalog";
+        } else if (isEnglish) {
+            language = "english";
+        }
     }
 
-    // Log language detection
     log(3, `Sentence: "${sentence}"`, 
         `Language Prediction: ${language}`, 
         `Where API was sent: ${LANGUAGE_DETECTION_MODEL}`
@@ -431,7 +437,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    // Timeout to keep service worker alive
     let keepAlive = true;
     const keepAliveInterval = setInterval(() => {
         if (!keepAlive) clearInterval(keepAliveInterval);
@@ -448,13 +453,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log("Detected language:", language);
 
                 let model = language === "english" ? ENGLISH_HATE_SPEECH_MODEL : TAGALOG_HATE_SPEECH_MODEL;
-                const prediction = await callHateSpeechAPI(model, request.sentence);
-                console.log("Prediction result:", prediction);
-
-                // Send the response before the port closes
-                sendResponse({ status: "success", predictionResult: prediction });
-                console.log("Sent response back to the sender");
-
+                
+                try {
+                    const prediction = await callHateSpeechAPI(model, request.sentence);
+                    console.log("Prediction result:", prediction);
+                    sendResponse({ status: "success", predictionResult: prediction });
+                } catch (error) {
+                    if (isColdStartError(error)) {
+                        console.error("Cold start error:", error);
+                        sendResponse({ status: "coldStart" });
+                    } else if (error.message.includes("token limit")) {
+                        console.error("Max token error:", error);
+                        sendResponse({ status: "maxToken" });
+                    } else {
+                        throw error; // Rethrow other errors
+                    }
+                }
             }
         } catch (error) {
             console.error("Error during message processing:", error);
@@ -466,6 +480,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     return true;  // Keep message channel open for async response
 });
+
 
 
 

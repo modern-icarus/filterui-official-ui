@@ -250,14 +250,13 @@ document.addEventListener("DOMContentLoaded", function() {
     
 
     async function handleMessage(sentence) {
-        // Preprocess the user's input: convert to lowercase
-        const processedSentence = sentence.toLowerCase();
+
     
         // Display user's message in the chat
-        displayMessage("user", processedSentence);
+        displayMessage("user", sentence);
+        const processedSentence = sentence.toLowerCase();
         
         try {
-            // Send the processed sentence to the background script for processing (prediction)
             chrome.runtime.sendMessage(
                 { action: "processChatMessage", sentence: processedSentence },
                 (response) => {
@@ -265,22 +264,28 @@ document.addEventListener("DOMContentLoaded", function() {
                         console.error("Error: " + chrome.runtime.lastError.message);
                         displayMessage("bot", "Sorry, something went wrong. Please try again.");
                     } else {
-                        // Display the bot's response with the prediction result
-                        const predictions = response.predictionResult || [];
-                        if (predictions.length > 0) {
-                            // Assume the first prediction is the most confident one
-                            const { label, score } = predictions[0];
-    
-                            // Map label to friendly message
-                            const isHateSpeech = label === "LABEL_1" ? "hate speech" : "not hate speech";
-    
-                            // Construct the message to show
-                            const confidence = (score * 100).toFixed(2); // Convert confidence to percentage
-                            const botMessage = `I am ${confidence}% confident that your sentence is ${isHateSpeech}.`;
-    
-                            displayMessage("bot", botMessage);
-                        } else {
-                            displayMessage("bot", "Sorry, no prediction result was found.");
+                        switch (response.status) {
+                            case "success":
+                                const predictions = response.predictionResult || [];
+                                if (predictions.length > 0) {
+                                    const { label, score } = predictions[0];
+                                    const isHateSpeech = label === "LABEL_1" ? "hate speech" : "not hate speech";
+                                    const confidence = (score * 100).toFixed(2);
+                                    const botMessage = `I am ${confidence}% confident that your sentence is ${isHateSpeech}.`;
+                                    displayMessage("bot", botMessage);
+                                } else {
+                                    displayMessage("bot", "No prediction result was found.");
+                                }
+                                break;
+                            case "coldStart":
+                                displayMessage("bot", "I fell asleep, it takes about 30 seconds for me to wake up. Please try again.");
+                                break;
+                            case "maxToken":
+                                displayMessage("bot", "Looks like I already used up all the energy developers gave me due to budget. Try again after an hour.");
+                                break;
+                            default:
+                                displayMessage("bot", "Sorry, something went wrong.");
+                                break;
                         }
                     }
                 }
