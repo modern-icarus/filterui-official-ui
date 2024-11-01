@@ -88,6 +88,16 @@ img {
   height: 100vh;
 }
 
+.landing__page{
+  height: 100vh;
+  background-color: var(--body-color) !important;
+  color: var(--purple-color);
+}
+
+.landing__desc{
+  color: var(--blue-color);
+}
+
 /* LAYOUT */
 .container {
   max-width: 968px;

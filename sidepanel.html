@@ -26,7 +26,7 @@
                     <ul class="nav__list">
 
                         <li class="nav__item">
-                            <a href="#detect" class="nav__link active-link">
+                            <a href="#detect" class="nav__link">
                                 <i class='bx bx-radar nav__icon'></i>
                                 <span class="nav__name">Detect</span>
                             </a>
@@ -98,16 +98,27 @@
             </nav>
         </header>
 
+         <!-- MAIN LANDING SECTION -->
+        <section class="hero-section text-center d-flex align-items-center justify-content-center landing__page">
+            <div class="container">
+                <h1 class="display-4 fw-bolder">Welcome to FilterX</h1>
+                <p class="lead landing__desc fw-bold">Real-Time Hate Speech Detection and Filtering.</p>
+                <div class="d-flex justify-content-center mt-4">
+                    <a href="#detect" class="btn btn-primary btn-lg mx-2 landing__button">Get Started</a>
+                </div>
+            </div>
+        </section>
+
         <main>
             <!-- DETECT -->
             <section class="container section section__height" id="detect">
-                <h2 class="section__title mt-5">Activate Detection</h2>
-                    <div class="accordion mt-5 m-3" id="accordionExample">
+                <h2 class="section__title mt-3">Activate Detection</h2>
+                    <div class="accordion mt-3 m-3" id="accordionExample">
                         <div class="accordion-item accordion__sec first__acc__item">
                             <h2 class="accordion-header" id="headingOne">
                                 <button class="accordion-button collapsed first__accordion__title fw-bolder" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne"><i class='bx bx-timer fs-1 me-2'></i>Real-Time Detection</button>
                             </h2>
-                            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
                                 <div class="accordion-body">
                                     <strong>Enable Real Time Detection. </strong> New loaded sentences will be automatically scanned. 
                                     Using this feature will consume higher resources.
@@ -156,7 +167,7 @@
                                     <i class='bx bx-message-rounded-dots fs-1 me-2'></i>Chat
                                 </button>
                             </h2>
-                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                            <div id="collapseThree" class="accordion-collapse collapse show" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
                                 <div class="accordion-body p-0">
                                     <div id="chatbox" class="m-0 mb-0 chatbox">
                                         <div id="chat-messages" class="chat-messages" style="height: 30vh; width: 20.4rem; overflow-y: auto;">
