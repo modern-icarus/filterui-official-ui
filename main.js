@@ -18,6 +18,8 @@ document.addEventListener("DOMContentLoaded", function() {
     var hateSpeechMap = {};
     const defaultFalse = false;
 
+    const startupMessage = "Type a sentence and I will try to understand whether it is hate speech or not!";
+
     // if (!scanPageButton || !modalContent || !scanToggle || !userInput || !sendMessageButton || !chatMessages) {
     //     console.error("Some elements not found!");
     //     return;
@@ -205,16 +207,47 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Chatbox functionality
-    // Function to display message in the chatbox
     function displayMessage(sender, message) {
+        const container = document.createElement("div");
+        container.classList.add("message-container", sender === "user" ? "user-container" : "bot-container");
+    
         const messageElement = document.createElement("div");
-        messageElement.classList.add("chat-message");
-        messageElement.classList.add(sender === "user" ? "user" : "bot");
+        messageElement.classList.add("chat-message", sender === "user" ? "user" : "bot");
         messageElement.textContent = message;
-        chatMessages.appendChild(messageElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;  // Scroll to bottom
+    
+        if (sender === "bot") {
+            const botImage = document.createElement("img");
+            botImage.src = "assets/img/fx.png";
+            botImage.style.width = "11%";
+            botImage.style.height = "auto";
+            botImage.style.borderRadius = "50%";
+            botImage.style.marginLeft = ".8rem";
+            botImage.style.marginRight = ".2rem";
+            
+            container.appendChild(botImage); // Place bot image to the left
+            container.appendChild(messageElement); // Then add message
+        } else if (sender === "user") {
+            container.appendChild(messageElement); // Add message first for user
+    
+            const userImage = document.createElement("img");
+            userImage.src = "assets/img/user.png";
+            userImage.style.width = "11%";
+            userImage.style.height = "auto";
+            userImage.style.borderRadius = "50%";
+            userImage.style.marginRight = ".8rem"; // Space between message and image on the right
+            userImage.style.marginRight = ".4rem";
+    
+            container.appendChild(userImage); // Add user image to the right
+        }
+    
+        chatMessages.appendChild(container);
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
     }
+    
+    
+    
+    
+    
 
     async function handleMessage(sentence) {
         // Preprocess the user's input: convert to lowercase
@@ -257,6 +290,8 @@ document.addEventListener("DOMContentLoaded", function() {
             displayMessage("bot", "Sorry, something went wrong.");
         }
     }
+
+    displayMessage("bot", startupMessage);
     
     
     
