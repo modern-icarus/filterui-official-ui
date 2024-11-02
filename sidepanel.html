@@ -233,6 +233,30 @@
             <!-- FILTER -->
             <section class="container section section__height" id="dashboard">
                 <h2 class="section__title mt-5">Dashboard</h2>
+                <div class="card draggable mx-3 dash__card1">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col mt-0">
+                                <h5 class="card-title">Hate Speech</h5>
+                            </div>
+                
+                            <div class="col-auto">
+                                <div class="stat text-primary">
+                                    <i class='bx bxs-pie-chart-alt-2 fs-1' style="color: white !important;"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <h1 class="mt-1 mb-3">2.382</h1>
+                        <div class="mb-0">
+                            <span class="text-danger" style="color: #FFA116 !important;"> <i class="mdi mdi-arrow-bottom-right"></i> -3.65% </span>
+                            <span class="text-muted" style="color: white !important;">Of Overall Sentence Sent</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body card__body mx-3 my-3" style="border-radius: 2% !important;">
+                    <canvas id="totalHateSpeechChart"></canvas>
+                </div>
             </section>
 
             <!-- ABOUT -->
@@ -246,7 +270,7 @@
             </section> -->
         </main>
         
-        
+        <script type="module" src="assets/js/chart.umd.js"></script>
         <script src="assets/js/main.js"></script>
         <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
         <script src="main.js"></script>

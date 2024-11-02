@@ -320,6 +320,76 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
     });
+
+    // DASHBOARD 
+
+    var ctx = document.getElementById('totalHateSpeechChart').getContext('2d');
+    var totalHateSpeechChart = new Chart(ctx, {
+        type: 'doughnut',  // Doughnut chart type
+        data: {
+            labels: ['English', 'Tagalog'],  // Labels for languages
+            datasets: [{
+                label: 'Total Hate Speech Detected',
+                data: [150, 100],  // Sample data, replace with actual values
+                backgroundColor: ['rgb(191, 90, 242)', '#FFA116'],  // Colors for each section
+                hoverOffset: 4  // Hover effect
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '50%',  // Adjusts the size of the inner circle
+            layout: {
+                padding: {
+                    bottom: 20,  // Adds padding below the legend
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',  // Position of the legend
+                    labels: {
+                        font: {
+                            size: 14,  // Font size for legend
+                            family: 'Roboto',  // Font family for legend
+                            weight: 'bold'  // Font weight for legend
+                        },
+                        color: '#FFFFFF',  // Text color for legend
+                        padding: 30 
+                    },
+                },
+                title: {
+                    display: true,  // Enable the title
+                    text: 'Hate Speech Per Language',  // Title text
+                    font: {
+                        size: 18,  // Title font size
+                        family: 'Roboto',  // Title font family
+                        weight: 'bold'  // Title font weight
+                    },
+                    color: '#FFFFFF',  // Text color for title
+                    padding: {
+                        top: 30,
+                        bottom: 15  // Adjust top and bottom padding for title
+                    }
+                },
+                tooltip: {
+                    enabled: true,  // Show tooltip on hover
+                    titleFont: {
+                        size: 14,  // Font size for tooltip title
+                        family: 'Roboto'
+                    },
+                    titleColor: '#FFFFFF',  // Tooltip title text color
+                    bodyFont: {
+                        size: 12,  // Font size for tooltip body text
+                        family: 'Roboto'
+                    },
+                    bodyColor: '#FFFFFF',  // Tooltip body text color
+                    padding: 10  // Padding inside the tooltip
+                }
+            },
+            clip: false
+        }
+    
+    });
+ 
 });
 
 

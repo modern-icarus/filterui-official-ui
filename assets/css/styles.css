@@ -98,6 +98,11 @@ img {
   color: var(--blue-color);
 }
 
+.dash__card1{
+  background: linear-gradient(292.9deg, rgb(254, 105, 241) 28.8%, rgb(182, 44, 248) 70.4%);
+  color: white !important;
+}
+
 /* LAYOUT */
 .container {
   max-width: 968px;
@@ -363,6 +368,12 @@ img {
 .user-container {
   flex-direction: row; /* Image on the right for user */
   justify-content: flex-end;
+}
+
+canvas{
+  background: linear-gradient(109.6deg, rgb(6, 183, 249) 11.2%, rgb(25, 74, 236) 91.1%) !important;
+  color: white !important;
+  border-radius: 2% !important;
 }
 
 
