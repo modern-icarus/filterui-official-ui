@@ -34,6 +34,8 @@ document.addEventListener("DOMContentLoaded", function() {
         // Only update the timeAgo when the card is shown (reopened)
         if (!isCardVisible) {
             updateNotificationsTimeAgo();
+            const notifBadge = document.querySelector(".nav__notif .notif__badge");
+            notifBadge.innerHTML = "0"; // Reset the badge count to 0
         }
     });
 
