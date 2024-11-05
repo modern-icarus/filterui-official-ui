@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const newNotifItem = document.createElement("li");
             newNotifItem.className = "list-group-item";
             newNotifItem.setAttribute('data-timestamp', timestamp); // Store the timestamp for later updates
-            newNotifItem.innerHTML = `<em>"${request.flaggedSentence}"</em> was flagged as hate speech • ${timeAgo}`; // Fix display
+            newNotifItem.innerHTML = `<em>${request.flaggedSentence}</em> was flagged as hate speech • ${timeAgo}`; // Fix display
 
             notifList.appendChild(newNotifItem);
 
@@ -323,72 +323,88 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // DASHBOARD 
 
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (request.action === "updateStatistics") {
+            const totalOccurrencesElement = document.getElementById('totalOccurrences');
+            const percentageElement = document.getElementById('hateSpeechPercentage');
+            
+            const totalSentences = request.totalSentences;
+            const flaggedSentences = request.flaggedSentences;
+            
+            // Update total occurrences
+            totalOccurrencesElement.textContent = flaggedSentences;
+    
+            // Calculate and update the percentage of hate speech
+            const percentage = ((flaggedSentences / totalSentences) * 100).toFixed(2);
+            percentageElement.innerHTML = `<i class="mdi mdi-arrow-bottom-right"></i> ${percentage}%`;
+    
+            // Get the hate speech counts for each language
+            const enHateCount = request.englishHateCount;  // Fixed variable name
+            const tlHateCount = request.tagalogHateCount;  // Fixed variable name
+    
+            // Update the chart data with actual counts
+            totalHateSpeechChart.data.datasets[0].data = [enHateCount, tlHateCount];
+            
+            // Redraw the chart to reflect updated data
+            totalHateSpeechChart.update();
+        }
+    });
+    
+    
+    
+
     var ctx = document.getElementById('totalHateSpeechChart').getContext('2d');
     var totalHateSpeechChart = new Chart(ctx, {
-        type: 'doughnut',  // Doughnut chart type
+        type: 'bar',  // Change chart type to 'bar'
         data: {
             labels: ['English', 'Tagalog'],  // Labels for languages
             datasets: [{
                 label: 'Total Hate Speech Detected',
-                data: [150, 100],  // Sample data, replace with actual values
-                backgroundColor: ['rgb(191, 90, 242)', '#FFA116'],  // Colors for each section
-                hoverOffset: 4  // Hover effect
+                data: [0, 0],  // Sample data, replace with actual values
+                backgroundColor: ['rgb(191, 90, 242)', '#FFA116'],  // Colors for each bar
             }]
         },
         options: {
             responsive: true,
-            cutout: '50%',  // Adjusts the size of the inner circle
-            layout: {
-                padding: {
-                    bottom: 20,  // Adds padding below the legend
-                }
-            },
             plugins: {
                 legend: {
-                    position: 'bottom',  // Position of the legend
+                    display: true,  // Show legend
+                    position: 'top',
                     labels: {
                         font: {
-                            size: 14,  // Font size for legend
-                            family: 'Roboto',  // Font family for legend
-                            weight: 'bold'  // Font weight for legend
+                            family: 'Roboto', // Set font to Roboto
+                            size: 14
                         },
-                        color: '#FFFFFF',  // Text color for legend
-                        padding: 30 
-                    },
-                },
-                title: {
-                    display: true,  // Enable the title
-                    text: 'Hate Speech Per Language',  // Title text
-                    font: {
-                        size: 18,  // Title font size
-                        family: 'Roboto',  // Title font family
-                        weight: 'bold'  // Title font weight
-                    },
-                    color: '#FFFFFF',  // Text color for title
-                    padding: {
-                        top: 30,
-                        bottom: 15  // Adjust top and bottom padding for title
+                        color: '#FFFFFF' // Text color
                     }
                 },
-                tooltip: {
-                    enabled: true,  // Show tooltip on hover
-                    titleFont: {
-                        size: 14,  // Font size for tooltip title
-                        family: 'Roboto'
-                    },
-                    titleColor: '#FFFFFF',  // Tooltip title text color
-                    bodyFont: {
-                        size: 12,  // Font size for tooltip body text
-                        family: 'Roboto'
-                    },
-                    bodyColor: '#FFFFFF',  // Tooltip body text color
-                    padding: 10  // Padding inside the tooltip
+                title: {
+                    display: true,
+                    text: 'Hate Speech Per Language',
+                    color: '#FFFFFF',
                 }
             },
-            clip: false
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Hate Speeches',
+                        color: '#FFFFFF',
+                    },
+                    ticks: {
+                        color: '#FFFFFF',
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#FFFFFF',
+                    }
+                }
+            }
         }
-    
     });
+
  
 });
 

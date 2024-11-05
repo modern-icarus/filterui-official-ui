@@ -383,57 +383,62 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 });
+
+
 let notifCount = 0;
+let totalSentencesCount = 0; // Track total number of sentences
+
+let enHateCount = 0;
+let tlHateCount = 0;
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "processSentence" && request.sentence) {
         try {
-            // Step 1: Detect language
+            totalSentencesCount++; // Increment total sentences count
+            
+            // Detect language and process sentence for hate speech
             const language = await detectLanguage(request.sentence);
-
-            // Step 2: Route to the appropriate model based on detected language
             let model = language === "english" ? ENGLISH_HATE_SPEECH_MODEL : TAGALOG_HATE_SPEECH_MODEL;
             const prediction = await callHateSpeechAPI(model, request.sentence);
 
-            // Step 3: Define threshold and check if flagged
             const threshold = getModeThreshold();
             const isFlagged = prediction.some(pred =>
                 (model === ENGLISH_HATE_SPEECH_MODEL && pred.label === "HATE" && pred.score >= threshold) ||
                 (model === TAGALOG_HATE_SPEECH_MODEL && pred.label === "LABEL_1" && pred.score >= threshold)
             );
 
-
             if (isFlagged) {
                 notifCount++;
+
+                if (language === "english") {
+                    enHateCount++;
+                } else if (language === "tagalog") {
+                    tlHateCount++;
+                }
                 chrome.runtime.sendMessage({
                     action: "updateBadge",
                     count: notifCount,
                     flaggedSentence: request.sentence,
-                    timestamp: Date.now()  // Add current timestamp in milliseconds
+                    timestamp: Date.now()
                 });
-                console.log("Hate speech count updated:", notifCount);
             }
-            
-            
-            
-            
 
-            // Send response with "FLAGGED" or "NOT FLAGGED"
+            chrome.runtime.sendMessage({
+                action: "updateStatistics",
+                totalSentences: totalSentencesCount,
+                flaggedSentences: notifCount,
+                englishHateCount: enHateCount,
+                tagalogHateCount: tlHateCount 
+            });            
+
             sendResponse({ status: "success", sentence: request.sentence, result: isFlagged ? "FLAGGED" : "NOT FLAGGED" });
-
         } catch (error) {
-            if (isColdStartError(error)) {
-                await handleColdStart();
-            }
-            log(1, "Error processing sentence in real-time detection:", error.message);
             sendResponse({ status: "error", error: error.message });
         }
-
-        // Return true to keep the message channel open for async response
         return true;
     }
-    return true;
 });
+
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
